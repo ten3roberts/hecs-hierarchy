@@ -2,10 +2,15 @@
 Hierarchy implementation for hecs ECS.
 
 ## Features
-- Lookup children for entity
-- Lookup parent for entity
-- Traverse hierarchy depth first
-- Traverse hierarchy breadth first
+- [X] Iterate children of parent
+- [ ] Lookup parent of child
+- [ ] Traverse hierarchy depth first
+- [ ] Traverse hierarchy breadth first
+- [ ] Traverse ancestors
+- [ ] Detach child from hierarchy
+- [ ] Reverse iteration
+- [ ] Sorting
+- [ ] (Optional) associated data to relation
 
 ## Usage
 ```rust
