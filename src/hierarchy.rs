@@ -2,7 +2,7 @@ use std::mem;
 
 use hecs::{ComponentError, DynamicBundle, Entity, World};
 
-use crate::{AncestorIter, Child, ChildrenIter, DepthFirstIterator, Parent};
+use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, Parent};
 
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
 pub trait Hierarchy<E> {
@@ -34,6 +34,12 @@ pub trait Hierarchy<E> {
         &self,
         root: Entity,
     ) -> DepthFirstIterator<T>;
+
+    /// Traverse the tree breadth first. Iterator does not include the child itself.
+    fn descendants_breadth_first<T: 'static + Send + Sync>(
+        &self,
+        root: Entity,
+    ) -> BreadthFirstIterator<T>;
 }
 
 impl Hierarchy<ComponentError> for World {
@@ -102,5 +108,13 @@ impl Hierarchy<ComponentError> for World {
         root: Entity,
     ) -> DepthFirstIterator<T> {
         DepthFirstIterator::new(self, root)
+    }
+
+    /// Traverse the tree breadth first. Iterator does not include the child itself.
+    fn descendants_breadth_first<T: 'static + Send + Sync>(
+        &self,
+        root: Entity,
+    ) -> BreadthFirstIterator<T> {
+        BreadthFirstIterator::new(self, root)
     }
 }
