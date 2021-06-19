@@ -67,6 +67,71 @@ fn ancestors() {
 }
 
 #[test]
+fn detach() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    //           ------- Child 3
+    //                   ------- Child 4
+
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+    let _child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
+    let child4 = world.attach_new::<Tree, _>(root, ("Child4",)).unwrap();
+    let child5 = world.attach_new::<Tree, _>(root, ("Child5",)).unwrap();
+
+    // Remove child2, and by extension child3
+    world.detach::<Tree>(child2).unwrap();
+
+    let order = [child5, child4, child1];
+
+    for child in world.children::<Tree>(root) {
+        println!(
+            "{:?}, {:?}",
+            *world.get::<&str>(child).unwrap(),
+            *world.get::<Child<Tree>>(child).unwrap()
+        );
+    }
+
+    assert!(world.children::<Tree>(root).eq(order.iter().cloned()))
+}
+
+#[test]
+fn reattach() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    //           ------- Child 3
+    //                   ------- Child 4
+
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+    let _child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
+    let child4 = world.attach_new::<Tree, _>(root, ("Child4",)).unwrap();
+    let child5 = world.attach_new::<Tree, _>(root, ("Child5",)).unwrap();
+
+    // Remove child2, and by extension child3
+    world.detach::<Tree>(child2).unwrap();
+
+    // Reattach child2 and child3 under child4
+    world.attach::<Tree>(child2, child4).unwrap();
+
+    let order = [child5, child4, child1];
+
+    for child in world.descendants_depth_first::<Tree>(root) {
+        println!(
+            "{:?}, {:?}",
+            *world.get::<&str>(child).unwrap(),
+            *world.get::<Child<Tree>>(child).unwrap()
+        );
+    }
+
+    assert!(world.children::<Tree>(root).eq(order.iter().cloned()))
+}
+
+#[test]
 fn dfs() {
     // Root ---- Child 1
     //      ---- Child 2

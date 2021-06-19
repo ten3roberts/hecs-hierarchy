@@ -22,6 +22,11 @@ pub trait Hierarchy<E> {
         components: C,
     ) -> Result<Entity, E>;
 
+    /// Detach the child from tree `T`. The children of `child` will not remain in hierachy, but will
+    /// remain attached to `child`, which means a later attach also will attach the children of `child`
+    /// into the hierarchy. Essentially moving the subtree.
+    fn detach<T: 'static + Send + Sync>(&mut self, child: Entity) -> Result<(), ComponentError>;
+
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T>;
@@ -80,6 +85,21 @@ impl Hierarchy<ComponentError> for World {
         self.insert_one(child, Child::<T>::new(parent, child, child))?;
 
         Ok(child)
+    }
+
+    fn detach<T: 'static + Send + Sync>(&mut self, child: Entity) -> Result<(), ComponentError> {
+        let data = self.get_mut::<Child<T>>(child)?;
+        let parent = data.parent;
+        let prev = data.prev;
+        let next = data.next;
+
+        mem::drop(data);
+
+        self.get_mut::<Child<T>>(prev)?.next = next;
+        self.get_mut::<Child<T>>(next)?.prev = prev;
+        self.get_mut::<Parent<T>>(parent)?.num_children -= 1;
+
+        Ok(())
     }
 
     fn attach_new<T: 'static + Send + Sync, C: DynamicBundle>(
