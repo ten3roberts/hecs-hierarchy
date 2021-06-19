@@ -58,3 +58,30 @@ where
         self.remaining
     }
 }
+
+pub struct AncestorIter<'a, T> {
+    world: &'a World,
+    current: Entity,
+    marker: PhantomData<T>,
+}
+
+impl<'a, T> AncestorIter<'a, T> {
+    pub(crate) fn new(world: &'a World, current: Entity) -> Self {
+        Self {
+            world,
+            current,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, T: 'static + Send + Sync> Iterator for AncestorIter<'a, T> {
+    type Item = Entity;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.world.get::<Child<T>>(self.current).ok().map(|child| {
+            self.current = child.parent;
+            child.parent
+        })
+    }
+}

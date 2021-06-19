@@ -2,7 +2,7 @@ use std::mem;
 
 use hecs::{ComponentError, Entity, World};
 
-use crate::{Child, ChildrenIter, Parent};
+use crate::{AncestorIter, Child, ChildrenIter, Parent};
 
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
 pub trait Hierarchy<E> {
@@ -17,6 +17,8 @@ pub trait Hierarchy<E> {
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T>;
+    /// Traverse the tree upwards. Iterator does not include the child itself.
+    fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T>;
 }
 
 impl Hierarchy<ComponentError> for World {
@@ -65,5 +67,9 @@ impl Hierarchy<ComponentError> for World {
             // Return an iterator that does nothing.
             Err(_) => ChildrenIter::new(self, 0, Entity::from_bits(0)),
         }
+    }
+
+    fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T> {
+        AncestorIter::new(self, child)
     }
 }

@@ -44,6 +44,29 @@ fn basic() {
 }
 
 #[test]
+fn ancestors() {
+    let mut world = World::default();
+    let depth = 10;
+    let root = world.spawn((String::from("Root"),));
+
+    let mut children = vec![root];
+
+    for i in 1..depth {
+        let child = world.spawn((format!("Child {}", i),));
+        world.attach::<Tree>(child, children[i - 1]).unwrap();
+        children.push(child);
+    }
+
+    assert!(world
+        .ancestors::<Tree>(children.pop().unwrap())
+        .map(|parent| {
+            println!("{}", *world.get::<String>(parent).unwrap());
+            parent
+        })
+        .eq(children.into_iter().rev()));
+}
+
+#[test]
 fn empty() {
     let mut world = World::default();
 
