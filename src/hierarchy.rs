@@ -1,8 +1,8 @@
 use std::mem;
 
-use hecs::{ComponentError, Entity, World};
+use hecs::{ComponentError, DynamicBundle, Entity, World};
 
-use crate::{AncestorIter, Child, ChildrenIter, Parent};
+use crate::{AncestorIter, Child, ChildrenIter, DepthFirstIterator, Parent};
 
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
 pub trait Hierarchy<E> {
@@ -14,11 +14,26 @@ pub trait Hierarchy<E> {
         parent: Entity,
     ) -> Result<Entity, E>;
 
+    /// Attach a new entity with specified components to `parent`. Parent does not require an existing `Parent component`. Returns
+    /// the passed child. The child is inserted at the head of the list.
+    fn attach_new<T: 'static + Send + Sync, C: DynamicBundle>(
+        &mut self,
+        parent: Entity,
+        components: C,
+    ) -> Result<Entity, E>;
+
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T>;
+
     /// Traverse the tree upwards. Iterator does not include the child itself.
     fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T>;
+
+    /// Traverse the tree depth first. Iterator does not include the child itself.
+    fn descendants_depth_first<T: 'static + Send + Sync>(
+        &self,
+        root: Entity,
+    ) -> DepthFirstIterator<T>;
 }
 
 impl Hierarchy<ComponentError> for World {
@@ -61,6 +76,15 @@ impl Hierarchy<ComponentError> for World {
         Ok(child)
     }
 
+    fn attach_new<T: 'static + Send + Sync, C: DynamicBundle>(
+        &mut self,
+        parent: Entity,
+        components: C,
+    ) -> Result<Entity, ComponentError> {
+        let child = self.spawn(components);
+        self.attach::<T>(child, parent)
+    }
+
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T> {
         match self.get::<Parent<T>>(parent) {
             Ok(p) => ChildrenIter::new(self, p.num_children, p.first_child),
@@ -71,5 +95,12 @@ impl Hierarchy<ComponentError> for World {
 
     fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T> {
         AncestorIter::new(self, child)
+    }
+
+    fn descendants_depth_first<T: 'static + Send + Sync>(
+        &self,
+        root: Entity,
+    ) -> DepthFirstIterator<T> {
+        DepthFirstIterator::new(self, root)
     }
 }

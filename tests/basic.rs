@@ -67,6 +67,31 @@ fn ancestors() {
 }
 
 #[test]
+fn dfs() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    //           ------- Child 3
+
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+    let child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
+    let child4 = world.attach_new::<Tree, _>(child3, ("Child4",)).unwrap();
+
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+
+    let order = [child1, child2, child3, child4];
+
+    assert!(world
+        .descendants_depth_first::<Tree>(root)
+        .map(|child| {
+            println!("{:?}", *world.get::<&str>(child).unwrap());
+            child
+        })
+        .eq(order.iter().cloned()));
+}
+
+#[test]
 fn empty() {
     let mut world = World::default();
 
