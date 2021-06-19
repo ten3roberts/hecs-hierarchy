@@ -8,6 +8,7 @@ use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstI
 pub trait Hierarchy<E> {
     /// Attach `child` to `parent`. Parent does not require an existing `Parent component`. Returns
     /// the passed child. The child is inserted at the head of the list.
+    /// *Note*: The entity needs to be explicitely detached before being removed.
     fn attach<T: 'static + Send + Sync>(
         &mut self,
         child: Entity,
@@ -21,6 +22,19 @@ pub trait Hierarchy<E> {
         parent: Entity,
         components: C,
     ) -> Result<Entity, E>;
+
+    /// Detaches all children from entity and detaches entity from parent. Use this before removing
+    /// entities to ensure no loose entity ids.
+    fn detach_all<T: 'static + Send + Sync>(
+        &mut self,
+        entity: Entity,
+    ) -> Result<(), ComponentError>;
+
+    /// Detaches all children of parent.
+    fn detach_children<T: 'static + Send + Sync>(
+        &mut self,
+        parent: Entity,
+    ) -> Result<(), ComponentError>;
 
     /// Detach the child from tree `T`. The children of `child` will not remain in hierachy, but will
     /// remain attached to `child`, which means a later attach also will attach the children of `child`
@@ -85,6 +99,29 @@ impl Hierarchy<ComponentError> for World {
         self.insert_one(child, Child::<T>::new(parent, child, child))?;
 
         Ok(child)
+    }
+
+    fn detach_all<T: 'static + Send + Sync>(
+        &mut self,
+        entity: Entity,
+    ) -> Result<(), ComponentError> {
+        self.detach_children::<T>(entity)?;
+        self.detach::<T>(entity)?;
+        Ok(())
+    }
+
+    /// Detaches all children of parent.
+    fn detach_children<T: 'static + Send + Sync>(
+        &mut self,
+        parent: Entity,
+    ) -> Result<(), ComponentError> {
+        let children = self.children::<T>(parent).collect::<Vec<Entity>>();
+
+        children
+            .iter()
+            .try_for_each(|child| self.remove_one::<Child<T>>(*child).map(|_| ()))?;
+
+        Ok(())
     }
 
     fn detach<T: 'static + Send + Sync>(&mut self, child: Entity) -> Result<(), ComponentError> {
