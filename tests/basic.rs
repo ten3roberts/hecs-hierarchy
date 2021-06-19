@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use hecs::{Entity, World};
-use hecs_hierarchy::Hierarchy;
+use hecs_hierarchy::{Child, Hierarchy};
 
+#[derive(Debug)]
 struct Tree;
 
 #[test]
@@ -10,23 +11,31 @@ fn basic() {
     let mut world = World::default();
     let root = world.spawn(("Root",));
 
-    let child1 = world.spawn(("Child 1",));
-    let child2 = world.spawn(("Child 2",));
-
     // Attaches the child to a parent, in this case `root`
-    world.attach::<Tree>(child1, root).unwrap();
-    world.attach::<Tree>(child2, root).unwrap();
+    let child_count = 10;
 
     // Make sure Hierarchy is correct but don't care about order.
-    let mut expected_childern: HashSet<Entity> = [child1, child2].iter().cloned().collect();
+    let mut expected_childern: HashSet<Entity> = HashSet::new();
+
+    for i in 0..child_count {
+        let child = world.spawn((format!("Child {}", i),));
+        expected_childern.insert(child);
+        world.attach::<Tree>(child, root).unwrap();
+    }
 
     for child in world.children::<Tree>(root) {
-        let name = world.get::<&str>(child).unwrap();
+        let name = world.get::<String>(child).unwrap();
 
         if !expected_childern.remove(&child) {
             panic!("Entity {:?} does not belong in hierarchy", child);
         }
-        println!("Child: {:?} {:?}", child, *name);
+
+        println!(
+            "Child: {:?} {:?}; {:?}",
+            child,
+            *name,
+            *world.get::<Child<Tree>>(child).unwrap()
+        );
     }
 
     if !expected_childern.is_empty() {

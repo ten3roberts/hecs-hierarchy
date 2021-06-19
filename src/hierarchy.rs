@@ -31,18 +31,30 @@ impl Hierarchy<ComponentError> for World {
             let next = p.first_child;
             p.first_child = child;
 
+            let mut next_data = self.get_mut::<Child<T>>(next)?;
+            let prev = next_data.prev;
+            next_data.prev = child;
+
+            mem::drop(next_data);
             mem::drop(maybe_p);
-            self.insert_one(child, Child::<T>::new(next))?;
+
+            // Update backward linking
+            {
+                let mut prev_data = self.get_mut::<Child<T>>(prev)?;
+                prev_data.next = child;
+            }
+
+            self.insert_one(child, Child::<T>::new(parent, next, prev))?;
+
             return Ok(child);
         }
 
         mem::drop(maybe_p);
 
-        // Parent component didn't exit
+        // Parent component didn't exist
         self.insert_one(parent, Parent::<T>::new(1, child))?;
 
-        // One long circular linked list
-        self.insert_one(child, Child::<T>::new(child))?;
+        self.insert_one(child, Child::<T>::new(parent, child, child))?;
 
         Ok(child)
     }

@@ -34,16 +34,31 @@ impl<T> Parent<T> {
 /// Component of a child entity in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
+#[derive(Debug)]
 pub struct Child<T> {
+    pub(crate) parent: Entity,
     pub(crate) next: Entity,
+    pub(crate) prev: Entity,
     marker: PhantomData<T>,
 }
 
 impl<T> Child<T> {
-    pub fn new(next: Entity) -> Self {
+    pub fn new(parent: Entity, next: Entity, prev: Entity) -> Self {
         Self {
+            parent,
             next,
+            prev,
             marker: PhantomData,
         }
     }
 }
+
+// impl<T> std::fmt::Debug for Child<T> {
+// fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//     write!(
+//         f,
+//         "{{ parent: {:?}, next: {:?}, prev: {:?} }}",
+//         self.parent, self.next, self.prev
+//     )
+// }
+// }
