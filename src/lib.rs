@@ -1,4 +1,42 @@
-//! hecs-hierarchy adds a hierarchy implementation to hecs ecs.
+//! # hecs-hierarchy
+//! Hierarchy implementation for hecs ECS.
+//!
+//! ## Features
+//! - [X] Iterate children of parent
+//! - [X] Lookup parent of child
+//! - [X] Traverse hierarchy depth first
+//! - [X] Traverse hierarchy breadth first
+//! - [X] Traverse ancestors
+//! - [X] Detach child from hierarchy
+//! - [ ] Reverse iteration
+//! - [ ] Sorting
+//! - [ ] (Optional) associated data to relation
+//!
+//! ## Getting Started
+//!
+//! Include both `hecs` and `hecs-hierarchy` as dependencies in your `Cargo.toml`.
+//!
+//! `hecs-hierarchy` does not re-export `hecs`
+//!
+//! ```toml
+//! [dependencies]
+//! hecs = 0.5
+//! hecs-hierarchy = 0.1
+//! ```
+//!
+//! ## Motivation
+//!
+//! An ECS is a fantastic design principle for designing software which allows a
+//! data oriented design. Most of the time, the ECS is flat with maybe a few
+//! components referencing each other via `Entity` ids.  Sometimes however, the need
+//! to create and manage proper, well behaved graphs, arises.
+//!
+//! This is were hecs-hierarchy comes in and gives the ability to manage directed
+//! graphs that can connect entities. This is very useful when developing a UI
+//! library using the ECS design pattern, or purely for grouping entities together
+//! from the same model.
+//!
+//! ## Usage
 //!
 //! Import the `Hierarchy` which extends [hecs::World](hecs::World)
 //!
@@ -8,8 +46,10 @@
 //! The hierarchy uses a marker type which makes it possible for a single entity to belong to
 //! several hierarchy trees.
 //!
+//! Read the documentation for
+//!
 //! Example usage:
-//! ```rust
+//! ```
 //! use hecs_hierarchy::Hierarchy;
 //!
 //! // Marker type which allows several hierarchies.
@@ -59,6 +99,14 @@
 //! //                     |-------- Grandchild
 //!
 //! ```
+//!
+//! ## Inspiration
+//!
+//! This project is heavily inspired by `Shipyard`'s hierarchy implementation and
+//! exposes a similar API.
+//!
+//! - [shipyard-hierarchy](https://github.com/dakom/shipyard-hierarchy)
+
 mod components;
 mod hierarchy;
 mod iter;
