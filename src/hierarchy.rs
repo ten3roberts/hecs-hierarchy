@@ -36,10 +36,17 @@ pub trait Hierarchy<E> {
         parent: Entity,
     ) -> Result<(), ComponentError>;
 
+    /// Returns the parent entity of child.
+    fn parent<T: 'static + Send + Sync>(&self, child: Entity) -> Result<Entity, ComponentError>;
+
     /// Detach the child from tree `T`. The children of `child` will not remain in hierachy, but will
     /// remain attached to `child`, which means a later attach also will attach the children of `child`
     /// into the hierarchy. Essentially moving the subtree.
     fn detach<T: 'static + Send + Sync>(&mut self, child: Entity) -> Result<(), ComponentError>;
+
+    /// Despawn parent and all children recursively. Essentially despawns a whole subtree including
+    /// root. Does not fail if there are invalid, dangling IDs in tree.
+    fn despawn_all<T: 'static + Send + Sync>(&mut self, parent: Entity);
 
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
@@ -124,6 +131,10 @@ impl Hierarchy<ComponentError> for World {
         Ok(())
     }
 
+    fn parent<T: 'static + Send + Sync>(&self, child: Entity) -> Result<Entity, ComponentError> {
+        self.get::<Child<T>>(child).map(|child| child.parent)
+    }
+
     fn detach<T: 'static + Send + Sync>(&mut self, child: Entity) -> Result<(), ComponentError> {
         let data = self.get_mut::<Child<T>>(child)?;
         let parent = data.parent;
@@ -137,6 +148,22 @@ impl Hierarchy<ComponentError> for World {
         self.get_mut::<Parent<T>>(parent)?.num_children -= 1;
 
         Ok(())
+    }
+
+    fn despawn_all<T: 'static + Send + Sync>(&mut self, parent: Entity) {
+        let to_despawn = self
+            .descendants_depth_first::<T>(parent)
+            .collect::<Vec<_>>();
+
+        // Detach from parent if necessary
+        let _ = self.detach::<T>(parent);
+
+        // Should not panic since we just
+        to_despawn.iter().for_each(|entity| {
+            let _ = self.despawn(*entity);
+        });
+
+        let _ = self.despawn(parent);
     }
 
     fn attach_new<T: 'static + Send + Sync, C: DynamicBundle>(

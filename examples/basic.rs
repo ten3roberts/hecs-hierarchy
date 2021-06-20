@@ -51,6 +51,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     //                     |-------- Grandchild
 
     print_tree::<Tree>(&world, root);
+
+    world.despawn_all::<Tree>(child2);
+
+    print_tree::<Tree>(&world, root);
+
+    world
+        .iter()
+        .for_each(|(entity, _)| println!("Entity: {:?}", entity));
+
     Ok(())
 }
 
