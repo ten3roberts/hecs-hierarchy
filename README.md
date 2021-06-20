@@ -1,6 +1,8 @@
 # hecs-hierarchy
 
-## hecs-hierarchy
+[![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
+[![Documentation](https://docs.rs/hecs-hierarchy/badge.svg)](https://docs.rs/hecs-hierarchy)
+
 Hierarchy implementation for hecs ECS.
 
 ### Features
@@ -40,7 +42,7 @@ from the same model.
 
 ### Usage
 
-Import the `Hierarchy` which extends [hecs::World](hecs::World)
+Import the [Hierarchy](hecs_hierarchy::Hierarchy) trait which extends [hecs::World](hecs::World)
 
 The trait [Hierarchy](hecs_hierarchy::Hierarchy) extends [hecs::World](hecs::World) with functions for
 manipulating and iterating the hierarchy tree.
@@ -48,7 +50,9 @@ manipulating and iterating the hierarchy tree.
 The hierarchy uses a marker type which makes it possible for a single entity to belong to
 several hierarchy trees.
 
-Read the documentation for
+See the [documentation](https://docs.rs/hecs-hierarchy), more specifically the
+[Hierarchy](https://docs.rs/hecs-hierarchy/0.1.7/hecs_hierarchy/trait.Hierarchy.html)
+trait
 
 Example usage:
 ```rust
