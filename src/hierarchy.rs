@@ -1,6 +1,6 @@
 use std::mem;
 
-use hecs::{ComponentError, DynamicBundle, Entity, World};
+use hecs::{ComponentError, DynamicBundle, Entity, QueryBorrow, Without, World};
 
 use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, Parent};
 
@@ -66,6 +66,9 @@ pub trait Hierarchy<E> {
         &self,
         root: Entity,
     ) -> BreadthFirstIterator<T>;
+
+    /// Returns an iterator over all root objects in the world
+    fn roots<T: 'static + Send + Sync>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>>;
 }
 
 impl Hierarchy<ComponentError> for World {
@@ -200,5 +203,9 @@ impl Hierarchy<ComponentError> for World {
         root: Entity,
     ) -> BreadthFirstIterator<T> {
         BreadthFirstIterator::new(self, root)
+    }
+
+    fn roots<T: 'static + Send + Sync>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>> {
+        self.query::<&Parent<T>>().without::<Child<T>>()
     }
 }

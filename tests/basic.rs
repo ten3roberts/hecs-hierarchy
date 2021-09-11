@@ -194,3 +194,31 @@ fn empty() {
         0
     )
 }
+#[test]
+fn roots() {
+    let mut world = World::default();
+    let root1 = world.spawn(("Root1",));
+    let root2 = world.spawn(("Root2",));
+    let root3 = world.spawn(("Root3",));
+
+    world.attach_new::<Tree, _>(root1, ("Child1",)).unwrap();
+    world.attach_new::<Tree, _>(root1, ("Child2",)).unwrap();
+    world.attach_new::<Tree, _>(root2, ("Child3",)).unwrap();
+    world.attach_new::<Tree, _>(root1, ("Child4",)).unwrap();
+    world.attach_new::<Tree, _>(root3, ("Child5",)).unwrap();
+
+    let mut expected = [root1, root2, root3];
+    expected.sort();
+
+    let mut roots = world
+        .roots::<Tree>()
+        .iter()
+        .map(|(e, _)| e)
+        .collect::<Vec<_>>();
+
+    roots.sort();
+
+    dbg!(&roots, &expected);
+
+    assert!(roots.iter().eq(expected.iter()))
+}
