@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     world
         .iter()
-        .for_each(|(entity, _)| println!("Entity: {:?}", entity));
+        .for_each(|entity| println!("Entity: {:?}", entity.entity()));
 
     Ok(())
 }
