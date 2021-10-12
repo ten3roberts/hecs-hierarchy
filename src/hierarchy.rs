@@ -184,11 +184,16 @@ impl Hierarchy<ComponentError> for World {
     }
 
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T> {
-        match self.get::<Parent<T>>(parent) {
-            Ok(p) => ChildrenIter::new(self, p.num_children, p.last_child),
-            // Return an iterator that does nothing.
-            Err(_) => ChildrenIter::new(self, 0, Entity::from_bits(0)),
-        }
+        self.get::<Parent<T>>(parent)
+            .and_then(|parent| {
+                let first_child = parent.first_child(self)?;
+
+                Ok(ChildrenIter::new(self, parent.num_children, first_child))
+            })
+            .unwrap_or_else(move |_| {
+                // Return an iterator that does nothing.
+                ChildrenIter::new(self, 0, Entity::from_bits(0))
+            })
     }
 
     fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T> {

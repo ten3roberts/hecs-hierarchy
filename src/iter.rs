@@ -43,7 +43,7 @@ where
             Err(_) => return None,
         };
 
-        self.current = data.prev;
+        self.current = data.next;
         Some(current)
     }
 
@@ -100,13 +100,16 @@ pub struct DepthFirstIterator<'a, T> {
 
 impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
     pub(crate) fn new(world: &'a World, root: Entity) -> Self {
-        let stack = match world.get::<Parent<T>>(root) {
-            Ok(p) => vec![StackFrame {
-                current: p.last_child,
-                remaining: p.num_children,
-            }],
-            Err(_) => vec![],
-        };
+        let stack = world
+            .get::<Parent<T>>(root)
+            .and_then(|parent| {
+                let first_child = parent.first_child(world)?;
+                Ok(vec![StackFrame {
+                    current: first_child,
+                    remaining: parent.num_children,
+                }])
+            })
+            .unwrap_or_default();
 
         Self {
             world,
@@ -130,13 +133,13 @@ impl<'a, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, T> {
             let data = self.world.get::<Child<T>>(top.current).ok().unwrap();
 
             // Go to the next child in the linked list of children
-            top.current = data.prev;
+            top.current = data.next;
             top.remaining -= 1;
 
             // If current is a parent, push a new stack frame with the first child
             if let Ok(parent) = self.world.get::<Parent<T>>(current) {
                 self.stack.push(StackFrame {
-                    current: parent.last_child,
+                    current: parent.first_child(self.world).unwrap(),
                     remaining: parent.num_children,
                 })
             }
