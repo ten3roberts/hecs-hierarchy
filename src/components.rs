@@ -5,6 +5,7 @@ use hecs::Entity;
 /// Component of a entity with descendents in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
+#[derive(Debug)]
 pub struct Parent<T> {
     pub(crate) num_children: usize,
     pub(crate) first_child: Entity,
@@ -25,7 +26,7 @@ impl<T> Parent<T> {
         self.num_children
     }
 
-    /// Return the aparent's first child.
+    /// Return the parent's first child.
     pub fn first_child(&self) -> Entity {
         self.first_child
     }

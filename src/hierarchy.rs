@@ -8,7 +8,7 @@ use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstI
 pub trait Hierarchy<E> {
     /// Attach `child` to `parent`. Parent does not require an existing `Parent component`. Returns
     /// the passed child. The child is inserted at the head of the list.
-    /// *Note*: The entity needs to be explicitely detached before being removed.
+    /// *Note*: The entity needs to be explicitly detached before being removed.
     fn attach<T: 'static + Send + Sync>(
         &mut self,
         child: Entity,
@@ -148,7 +148,12 @@ impl Hierarchy<ComponentError> for World {
 
         self.get_mut::<Child<T>>(prev)?.next = next;
         self.get_mut::<Child<T>>(next)?.prev = prev;
-        self.get_mut::<Parent<T>>(parent)?.num_children -= 1;
+
+        let mut parent = self.get_mut::<Parent<T>>(parent)?;
+        parent.num_children -= 1;
+        if parent.first_child == child {
+            parent.first_child = next;
+        }
 
         Ok(())
     }
