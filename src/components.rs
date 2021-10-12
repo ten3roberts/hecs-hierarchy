@@ -5,7 +5,6 @@ use hecs::{ComponentError, Entity, World};
 /// Component of a entity with descendents in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
-#[derive(Debug)]
 pub struct Parent<T> {
     pub(crate) num_children: usize,
     pub(crate) last_child: Entity,
@@ -37,10 +36,18 @@ impl<T: 'static + Send + Sync> Parent<T> {
     }
 }
 
+impl<T> std::fmt::Debug for Parent<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Parent")
+            .field("num_children", &self.num_children)
+            .field("last_child", &self.last_child)
+            .finish()
+    }
+}
+
 /// Component of a child entity in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
-#[derive(Debug)]
 pub struct Child<T> {
     pub(crate) parent: Entity,
     pub(crate) next: Entity,
@@ -59,12 +66,12 @@ impl<T> Child<T> {
     }
 }
 
-// impl<T> std::fmt::Debug for Child<T> {
-// fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//     write!(
-//         f,
-//         "{{ parent: {:?}, next: {:?}, prev: {:?} }}",
-//         self.parent, self.next, self.prev
-//     )
-// }
-// }
+impl<T> std::fmt::Debug for Child<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Child")
+            .field("parent", &self.parent)
+            .field("next", &self.next)
+            .field("prev", &self.prev)
+            .finish()
+    }
+}
