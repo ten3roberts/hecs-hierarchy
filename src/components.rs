@@ -8,15 +8,15 @@ use hecs::Entity;
 #[derive(Debug)]
 pub struct Parent<T> {
     pub(crate) num_children: usize,
-    pub(crate) first_child: Entity,
+    pub(crate) last_child: Entity,
     marker: PhantomData<T>,
 }
 
 impl<T> Parent<T> {
-    pub(crate) fn new(num_children: usize, first_child: Entity) -> Self {
+    pub(crate) fn new(num_children: usize, last_child: Entity) -> Self {
         Self {
             num_children,
-            first_child,
+            last_child,
             marker: PhantomData,
         }
     }
@@ -26,9 +26,9 @@ impl<T> Parent<T> {
         self.num_children
     }
 
-    /// Return the parent's first child.
-    pub fn first_child(&self) -> Entity {
-        self.first_child
+    /// Return the parent's last child.
+    pub fn last_child(&self) -> Entity {
+        self.last_child
     }
 }
 
