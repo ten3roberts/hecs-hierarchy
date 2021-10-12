@@ -13,7 +13,7 @@ pub struct Parent<T> {
 }
 
 impl<T> Parent<T> {
-    pub fn new(num_children: usize, first_child: Entity) -> Self {
+    pub(crate) fn new(num_children: usize, first_child: Entity) -> Self {
         Self {
             num_children,
             first_child,
@@ -44,7 +44,7 @@ pub struct Child<T> {
 }
 
 impl<T> Child<T> {
-    pub fn new(parent: Entity, next: Entity, prev: Entity) -> Self {
+    pub(crate) fn new(parent: Entity, next: Entity, prev: Entity) -> Self {
         Self {
             parent,
             next,

@@ -14,7 +14,7 @@ pub struct ChildrenIter<'a, T> {
 }
 
 impl<'a, T> ChildrenIter<'a, T> {
-    pub fn new(world: &'a World, num_children: usize, current: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, num_children: usize, current: Entity) -> Self {
         Self {
             world,
             remaining: num_children,
@@ -99,7 +99,7 @@ pub struct DepthFirstIterator<'a, T> {
 }
 
 impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
-    pub fn new(world: &'a World, root: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
         let stack = match world.get::<Parent<T>>(root) {
             Ok(p) => vec![StackFrame {
                 current: p.first_child,
@@ -157,7 +157,7 @@ pub struct BreadthFirstIterator<'a, T> {
 }
 
 impl<'a, T: 'static + Send + Sync> BreadthFirstIterator<'a, T> {
-    pub fn new(world: &'a World, root: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
         // Add immediate children of root to queue
         let queue = world.children::<T>(root).collect();
 
