@@ -15,20 +15,16 @@ fn basic() {
     let child_count = 10;
 
     // Make sure Hierarchy is correct but don't care about order.
-    let mut expected_childern: HashSet<Entity> = HashSet::new();
+    let mut expected_children: HashSet<Entity> = HashSet::new();
 
     for i in 0..child_count {
         let child = world.spawn((format!("Child {}", i),));
-        expected_childern.insert(child);
+        expected_children.insert(child);
         world.attach::<Tree>(child, root).unwrap();
     }
 
     for child in world.children::<Tree>(root) {
         let name = world.get::<String>(child).unwrap();
-
-        if !expected_childern.remove(&child) {
-            panic!("Entity {:?} does not belong in hierarchy", child);
-        }
 
         println!(
             "Child: {:?} {:?}; {:?}",
@@ -36,9 +32,13 @@ fn basic() {
             *name,
             *world.get::<Child<Tree>>(child).unwrap()
         );
+
+        if !expected_children.remove(&child) {
+            panic!("Entity {:?} does not belong in hierarchy", child);
+        }
     }
 
-    if !expected_childern.is_empty() {
+    if !expected_children.is_empty() {
         panic!("Not all children in hierarchy were visited")
     }
 }
@@ -57,13 +57,16 @@ fn ancestors() {
         children.push(child);
     }
 
-    assert!(world
-        .ancestors::<Tree>(children.pop().unwrap())
-        .map(|parent| {
-            println!("{}", *world.get::<String>(parent).unwrap());
-            parent
-        })
-        .eq(children.into_iter().rev()));
+    assert_eq!(
+        world
+            .ancestors::<Tree>(children.pop().unwrap())
+            .map(|parent| {
+                println!("{}", *world.get::<String>(parent).unwrap());
+                parent
+            })
+            .collect::<Vec<_>>(),
+        children.into_iter().rev().collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -71,7 +74,8 @@ fn detach() {
     // Root ---- Child 1
     //      ---- Child 2
     //           ------- Child 3
-    //                   ------- Child 4
+    //      ---- Child 4
+    //      ---- Child 5
 
     let mut world = World::default();
     let root = world.spawn(("Root",));
@@ -84,7 +88,7 @@ fn detach() {
     // Remove child2, and by extension child3
     world.detach::<Tree>(child2).unwrap();
 
-    let order = [child5, child4, child1];
+    let order = [child1, child4, child5];
 
     for child in world.children::<Tree>(root) {
         println!(
@@ -94,7 +98,10 @@ fn detach() {
         );
     }
 
-    assert!(world.children::<Tree>(root).eq(order.iter().cloned()))
+    assert_eq!(
+        world.children::<Tree>(root).collect::<Vec<_>>(),
+        order.iter().cloned().collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -118,7 +125,7 @@ fn reattach() {
     // Reattach child2 and child3 under child4
     world.attach::<Tree>(child2, child4).unwrap();
 
-    let order = [child5, child4, child1];
+    let order = [child1, child4, child5];
 
     for child in world.descendants_depth_first::<Tree>(root) {
         println!(
@@ -128,7 +135,10 @@ fn reattach() {
         );
     }
 
-    assert!(world.children::<Tree>(root).eq(order.iter().cloned()))
+    assert_eq!(
+        world.children::<Tree>(root).collect::<Vec<_>>(),
+        order.iter().cloned().collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -145,15 +155,18 @@ fn dfs() {
     let child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
     let child4 = world.attach_new::<Tree, _>(child3, ("Child4",)).unwrap();
 
-    let order = [child2, child3, child4, child1];
+    let order = [child1, child2, child3, child4];
 
     for child in world.descendants_depth_first::<Tree>(root) {
         println!("{:?}", *world.get::<&str>(child).unwrap());
     }
 
-    assert!(world
-        .descendants_depth_first::<Tree>(root)
-        .eq(order.iter().cloned()))
+    assert_eq!(
+        world
+            .descendants_depth_first::<Tree>(root)
+            .collect::<Vec<_>>(),
+        order.iter().cloned().collect::<Vec<_>>()
+    );
 }
 
 #[test]
@@ -170,16 +183,20 @@ fn bfs() {
     let child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
     let child4 = world.attach_new::<Tree, _>(child3, ("Child4",)).unwrap();
 
-    let order = [child2, child1, child3, child4];
+    let order = [child1, child2, child3, child4];
 
     for child in world.descendants_breadth_first::<Tree>(root) {
         println!("{:?}", *world.get::<&str>(child).unwrap());
     }
 
-    assert!(world
-        .descendants_breadth_first::<Tree>(root)
-        .eq(order.iter().cloned()))
+    assert_eq!(
+        world
+            .descendants_breadth_first::<Tree>(root)
+            .collect::<Vec<_>>(),
+        order.iter().cloned().collect::<Vec<_>>()
+    );
 }
+
 #[test]
 fn empty() {
     let mut world = World::default();
@@ -194,6 +211,7 @@ fn empty() {
         0
     )
 }
+
 #[test]
 fn roots() {
     let mut world = World::default();
@@ -220,5 +238,8 @@ fn roots() {
 
     dbg!(&roots, &expected);
 
-    assert!(roots.iter().eq(expected.iter()))
+    assert_eq!(
+        roots.iter().collect::<Vec<_>>(),
+        expected.iter().collect::<Vec<_>>()
+    );
 }

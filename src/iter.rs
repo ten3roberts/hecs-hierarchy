@@ -14,7 +14,7 @@ pub struct ChildrenIter<'a, T> {
 }
 
 impl<'a, T> ChildrenIter<'a, T> {
-    pub fn new(world: &'a World, num_children: usize, current: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, num_children: usize, current: Entity) -> Self {
         Self {
             world,
             remaining: num_children,
@@ -99,14 +99,17 @@ pub struct DepthFirstIterator<'a, T> {
 }
 
 impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
-    pub fn new(world: &'a World, root: Entity) -> Self {
-        let stack = match world.get::<Parent<T>>(root) {
-            Ok(p) => vec![StackFrame {
-                current: p.first_child,
-                remaining: p.num_children,
-            }],
-            Err(_) => vec![],
-        };
+    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
+        let stack = world
+            .get::<Parent<T>>(root)
+            .and_then(|parent| {
+                let first_child = parent.first_child(world)?;
+                Ok(vec![StackFrame {
+                    current: first_child,
+                    remaining: parent.num_children,
+                }])
+            })
+            .unwrap_or_default();
 
         Self {
             world,
@@ -136,7 +139,7 @@ impl<'a, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, T> {
             // If current is a parent, push a new stack frame with the first child
             if let Ok(parent) = self.world.get::<Parent<T>>(current) {
                 self.stack.push(StackFrame {
-                    current: parent.first_child,
+                    current: parent.first_child(self.world).unwrap(),
                     remaining: parent.num_children,
                 })
             }
@@ -157,7 +160,7 @@ pub struct BreadthFirstIterator<'a, T> {
 }
 
 impl<'a, T: 'static + Send + Sync> BreadthFirstIterator<'a, T> {
-    pub fn new(world: &'a World, root: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
         // Add immediate children of root to queue
         let queue = world.children::<T>(root).collect();
 

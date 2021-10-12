@@ -1,21 +1,21 @@
 use std::marker::PhantomData;
 
-use hecs::Entity;
+use hecs::{ComponentError, Entity, World};
 
 /// Component of a entity with descendents in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
 pub struct Parent<T> {
     pub(crate) num_children: usize,
-    pub(crate) first_child: Entity,
+    pub(crate) last_child: Entity,
     marker: PhantomData<T>,
 }
 
-impl<T> Parent<T> {
-    pub fn new(num_children: usize, first_child: Entity) -> Self {
+impl<T: 'static + Send + Sync> Parent<T> {
+    pub(crate) fn new(num_children: usize, last_child: Entity) -> Self {
         Self {
             num_children,
-            first_child,
+            last_child,
             marker: PhantomData,
         }
     }
@@ -25,16 +25,29 @@ impl<T> Parent<T> {
         self.num_children
     }
 
-    /// Return the aparent's first child.
-    pub fn first_child(&self) -> Entity {
-        self.first_child
+    /// Query the parent's first child.
+    pub fn first_child(&self, world: &World) -> Result<Entity, ComponentError> {
+        Ok(world.get::<Child<T>>(self.last_child)?.next)
+    }
+
+    /// Return the parent's last child.
+    pub fn last_child(&self) -> Entity {
+        self.last_child
+    }
+}
+
+impl<T> std::fmt::Debug for Parent<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Parent")
+            .field("num_children", &self.num_children)
+            .field("last_child", &self.last_child)
+            .finish()
     }
 }
 
 /// Component of a child entity in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
 /// type, several hierarchies can coexist.
-#[derive(Debug)]
 pub struct Child<T> {
     pub(crate) parent: Entity,
     pub(crate) next: Entity,
@@ -43,7 +56,7 @@ pub struct Child<T> {
 }
 
 impl<T> Child<T> {
-    pub fn new(parent: Entity, next: Entity, prev: Entity) -> Self {
+    pub(crate) fn new(parent: Entity, next: Entity, prev: Entity) -> Self {
         Self {
             parent,
             next,
@@ -53,12 +66,12 @@ impl<T> Child<T> {
     }
 }
 
-// impl<T> std::fmt::Debug for Child<T> {
-// fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//     write!(
-//         f,
-//         "{{ parent: {:?}, next: {:?}, prev: {:?} }}",
-//         self.parent, self.next, self.prev
-//     )
-// }
-// }
+impl<T> std::fmt::Debug for Child<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Child")
+            .field("parent", &self.parent)
+            .field("next", &self.next)
+            .field("prev", &self.prev)
+            .finish()
+    }
+}

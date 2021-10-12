@@ -7,8 +7,8 @@ use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstI
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
 pub trait Hierarchy<E> {
     /// Attach `child` to `parent`. Parent does not require an existing `Parent component`. Returns
-    /// the passed child. The child is inserted at the head of the list.
-    /// *Note*: The entity needs to be explicitely detached before being removed.
+    /// the passed child.
+    /// *Note*: The entity needs to be explicitly detached before being removed.
     fn attach<T: 'static + Send + Sync>(
         &mut self,
         child: Entity,
@@ -16,7 +16,7 @@ pub trait Hierarchy<E> {
     ) -> Result<Entity, E>;
 
     /// Attach a new entity with specified components to `parent`. Parent does not require an existing `Parent component`. Returns
-    /// the passed child. The child is inserted at the head of the list.
+    /// the passed child.
     fn attach_new<T: 'static + Send + Sync, C: DynamicBundle>(
         &mut self,
         parent: Entity,
@@ -80,20 +80,20 @@ impl Hierarchy<ComponentError> for World {
         let mut maybe_p = self.get_mut::<Parent<T>>(parent);
         if let Ok(ref mut p) = maybe_p {
             p.num_children += 1;
-            let next = p.first_child;
-            p.first_child = child;
+            let prev = p.last_child;
+            p.last_child = child;
 
-            let mut next_data = self.get_mut::<Child<T>>(next)?;
-            let prev = next_data.prev;
-            next_data.prev = child;
+            let mut prev_data = self.get_mut::<Child<T>>(prev)?;
+            let next = prev_data.next;
+            prev_data.next = child;
 
-            mem::drop(next_data);
+            mem::drop(prev_data);
             mem::drop(maybe_p);
 
             // Update backward linking
             {
-                let mut prev_data = self.get_mut::<Child<T>>(prev)?;
-                prev_data.next = child;
+                let mut next_data = self.get_mut::<Child<T>>(next)?;
+                next_data.prev = child;
             }
 
             self.insert_one(child, Child::<T>::new(parent, next, prev))?;
@@ -148,7 +148,12 @@ impl Hierarchy<ComponentError> for World {
 
         self.get_mut::<Child<T>>(prev)?.next = next;
         self.get_mut::<Child<T>>(next)?.prev = prev;
-        self.get_mut::<Parent<T>>(parent)?.num_children -= 1;
+
+        let mut parent = self.get_mut::<Parent<T>>(parent)?;
+        parent.num_children -= 1;
+        if parent.last_child == child {
+            parent.last_child = prev;
+        }
 
         Ok(())
     }
@@ -179,11 +184,16 @@ impl Hierarchy<ComponentError> for World {
     }
 
     fn children<T: 'static + Send + Sync>(&self, parent: Entity) -> ChildrenIter<T> {
-        match self.get::<Parent<T>>(parent) {
-            Ok(p) => ChildrenIter::new(self, p.num_children, p.first_child),
-            // Return an iterator that does nothing.
-            Err(_) => ChildrenIter::new(self, 0, Entity::from_bits(0)),
-        }
+        self.get::<Parent<T>>(parent)
+            .and_then(|parent| {
+                let first_child = parent.first_child(self)?;
+
+                Ok(ChildrenIter::new(self, parent.num_children, first_child))
+            })
+            .unwrap_or_else(move |_| {
+                // Return an iterator that does nothing.
+                ChildrenIter::new(self, 0, Entity::from_bits(0))
+            })
     }
 
     fn ancestors<T: 'static + Send + Sync>(&self, child: Entity) -> AncestorIter<T> {
