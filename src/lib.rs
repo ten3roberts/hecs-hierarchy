@@ -114,10 +114,12 @@
 //!
 //! - [shipyard-hierarchy](https://github.com/dakom/shipyard-hierarchy)
 
+mod builder;
 mod components;
 mod hierarchy;
 mod iter;
 
+pub use builder::*;
 pub use components::*;
 pub use hierarchy::*;
 pub use iter::*;
