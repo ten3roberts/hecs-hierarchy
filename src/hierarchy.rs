@@ -5,7 +5,7 @@ use hecs::{ComponentError, DynamicBundle, Entity, QueryBorrow, Without, World};
 use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, Parent};
 
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
-pub trait Hierarchy<E> {
+pub trait Hierarchy {
     /// Attach `child` to `parent`. Parent does not require an existing `Parent component`. Returns
     /// the passed child.
     /// *Note*: The entity needs to be explicitly detached before being removed.
@@ -13,7 +13,7 @@ pub trait Hierarchy<E> {
         &mut self,
         child: Entity,
         parent: Entity,
-    ) -> Result<Entity, E>;
+    ) -> Result<Entity, ComponentError>;
 
     /// Attach a new entity with specified components to `parent`. Parent does not require an existing `Parent component`. Returns
     /// the passed child.
@@ -21,7 +21,7 @@ pub trait Hierarchy<E> {
         &mut self,
         parent: Entity,
         components: C,
-    ) -> Result<Entity, E>;
+    ) -> Result<Entity, ComponentError>;
 
     /// Detaches all children from entity and detaches entity from parent. Use this before removing
     /// entities to ensure no loose entity ids.
@@ -71,7 +71,7 @@ pub trait Hierarchy<E> {
     fn roots<T: 'static + Send + Sync>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>>;
 }
 
-impl Hierarchy<ComponentError> for World {
+impl Hierarchy for World {
     fn attach<T: 'static + Send + Sync>(
         &mut self,
         child: Entity,
