@@ -31,6 +31,8 @@ use super::hierarchy::Hierarchy;
 ///     .entity();
 /// ```
 pub struct TreeBuilder<'a, T> {
+    // World uses interior mutability to allows recursive tree building using
+    // the same builder.
     world: RefCell<&'a mut World>,
     phantom: PhantomData<T>,
 }
@@ -48,7 +50,7 @@ impl<'a, T: 'static + Send + Sync> TreeBuilder<'a, T> {
     /// # Panics
     ///
     /// Panics if the value is currently mutably borrowed.
-    pub fn world(&self) -> Ref<&'a mut World> {
+    pub(crate) fn world(&self) -> Ref<&'a mut World> {
         self.world.borrow()
     }
 
@@ -57,7 +59,7 @@ impl<'a, T: 'static + Send + Sync> TreeBuilder<'a, T> {
     /// # Panics
     ///
     /// Panics if the value is currently borrowed.
-    pub fn world_mut(&self) -> RefMut<&'a mut World> {
+    pub(crate) fn world_mut(&self) -> RefMut<&'a mut World> {
         self.world.borrow_mut()
     }
 

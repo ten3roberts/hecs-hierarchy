@@ -1,7 +1,7 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, ops::Deref};
 
 use hecs::{Entity, World};
-use hecs_hierarchy::{Child, Hierarchy};
+use hecs_hierarchy::{Child, Hierarchy, TreeBuilder};
 
 #[derive(Debug)]
 struct Tree;
@@ -242,4 +242,33 @@ fn roots() {
         roots.iter().collect::<Vec<_>>(),
         expected.iter().collect::<Vec<_>>()
     );
+}
+
+#[test]
+fn builder() {
+    let mut world = World::default();
+    let builder = TreeBuilder::<Tree>::new(&mut world);
+    let root = builder
+        .spawn_tree(("root",))
+        .attach_new(("child 1",))
+        .attach_new(("child 2",))
+        .attach(
+            builder
+                .spawn_tree(("child 3",))
+                .attach_new(("child 3.1",))
+                .entity(),
+        )
+        .entity();
+
+    let expected = ["child 1", "child 2", "child 3", "child 3.1"];
+
+    assert!(world
+        .descendants_breadth_first::<Tree>(root)
+        .zip(expected)
+        .map(|(e, expected)| {
+            let name = *world.get::<&str>(e).unwrap();
+            eprintln!("Name: {}", name);
+            name == expected
+        })
+        .all(|val| val == true));
 }
