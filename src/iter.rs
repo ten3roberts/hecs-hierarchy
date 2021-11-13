@@ -1,8 +1,11 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
 use hecs::{Entity, World};
+use smallvec::{smallvec, SmallVec};
 
 use crate::{Child, Hierarchy, Parent};
+
+const STACK_SIZE: usize = 64;
 
 /// Iterates children along with Query `Q`. Children who do not satisfy `Q` will be skipped.
 /// Count is known in advanced and will not fold iterator.
@@ -95,7 +98,8 @@ struct StackFrame {
 pub struct DepthFirstIterator<'a, T> {
     world: &'a World,
     marker: PhantomData<T>,
-    stack: Vec<StackFrame>,
+    /// Since StackFrame is so small, use smallvec optimizations
+    stack: SmallVec<[StackFrame; STACK_SIZE]>,
 }
 
 impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
@@ -104,7 +108,7 @@ impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
             .get::<Parent<T>>(root)
             .and_then(|parent| {
                 let first_child = parent.first_child(world)?;
-                Ok(vec![StackFrame {
+                Ok(smallvec![StackFrame {
                     current: first_child,
                     remaining: parent.num_children,
                 }])
