@@ -12,12 +12,12 @@ const STACK_SIZE: usize = 64;
 pub struct ChildrenIter<'a, T> {
     world: &'a World,
     remaining: usize,
-    current: Entity,
+    current: Option<Entity>,
     marker: PhantomData<T>,
 }
 
 impl<'a, T> ChildrenIter<'a, T> {
-    pub(crate) fn new(world: &'a World, num_children: usize, current: Entity) -> Self {
+    pub(crate) fn new(world: &'a World, num_children: usize, current: Option<Entity>) -> Self {
         Self {
             world,
             remaining: num_children,
@@ -40,13 +40,13 @@ where
 
         self.remaining -= 1;
 
-        let current = self.current;
+        let current = self.current?;
         let data = match self.world.get::<Child<T>>(current) {
             Ok(data) => data,
             Err(_) => return None,
         };
 
-        self.current = data.next;
+        self.current = Some(data.next);
         Some(current)
     }
 

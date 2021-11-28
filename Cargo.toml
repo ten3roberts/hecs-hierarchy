@@ -15,5 +15,5 @@ keywords = ["gamedev", "ecs", "hierarchy", "hecs"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hecs = "0.6"
+hecs = "0.7.0"
 smallvec = "1.7.0"

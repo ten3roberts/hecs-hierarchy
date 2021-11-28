@@ -188,11 +188,15 @@ impl Hierarchy for World {
             .and_then(|parent| {
                 let first_child = parent.first_child(self)?;
 
-                Ok(ChildrenIter::new(self, parent.num_children, first_child))
+                Ok(ChildrenIter::new(
+                    self,
+                    parent.num_children,
+                    Some(first_child),
+                ))
             })
             .unwrap_or_else(move |_| {
                 // Return an iterator that does nothing.
-                ChildrenIter::new(self, 0, Entity::from_bits(0))
+                ChildrenIter::new(self, 0, None)
             })
     }
 

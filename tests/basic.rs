@@ -1,4 +1,4 @@
-use std::{collections::HashSet, ops::Deref};
+use std::collections::HashSet;
 
 use hecs::{Entity, World};
 use hecs_hierarchy::{Child, Hierarchy, TreeBuilder};
