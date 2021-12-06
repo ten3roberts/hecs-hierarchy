@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use hecs::{Entity, World};
-use hecs_hierarchy::Hierarchy;
+use hecs_hierarchy::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Marker type which allows several hierarchies.

@@ -5,7 +5,7 @@ use std::{
 
 use hecs::{DynamicBundle, Entity, World};
 
-use super::hierarchy::Hierarchy;
+use crate::HierarchyMut;
 
 /// A wrapper to help spawn trees more ergonomically
 ///

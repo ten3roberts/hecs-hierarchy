@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
-use hecs::{Entity, World};
+use hecs::Entity;
+use hecs_schedule::GenericWorld;
 use smallvec::{smallvec, SmallVec};
 
 use crate::{Child, Hierarchy, Parent};
@@ -9,15 +10,15 @@ const STACK_SIZE: usize = 64;
 
 /// Iterates children along with Query `Q`. Children who do not satisfy `Q` will be skipped.
 /// Count is known in advanced and will not fold iterator.
-pub struct ChildrenIter<'a, T> {
-    world: &'a World,
+pub struct ChildrenIter<'a, W, T> {
+    world: &'a W,
     remaining: usize,
     current: Option<Entity>,
     marker: PhantomData<T>,
 }
 
-impl<'a, T> ChildrenIter<'a, T> {
-    pub(crate) fn new(world: &'a World, num_children: usize, current: Option<Entity>) -> Self {
+impl<'a, W: GenericWorld, T> ChildrenIter<'a, W, T> {
+    pub(crate) fn new(world: &'a W, num_children: usize, current: Option<Entity>) -> Self {
         Self {
             world,
             remaining: num_children,
@@ -27,7 +28,7 @@ impl<'a, T> ChildrenIter<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for ChildrenIter<'a, T>
+impl<'a, W: GenericWorld, T> Iterator for ChildrenIter<'a, W, T>
 where
     T: 'static + Send + Sync,
 {
@@ -41,7 +42,7 @@ where
         self.remaining -= 1;
 
         let current = self.current?;
-        let data = match self.world.get::<Child<T>>(current) {
+        let data = match self.world.try_get::<Child<T>>(current) {
             Ok(data) => data,
             Err(_) => return None,
         };
@@ -62,14 +63,14 @@ where
     }
 }
 
-pub struct AncestorIter<'a, T> {
-    world: &'a World,
+pub struct AncestorIter<'a, W, T> {
+    world: &'a W,
     current: Entity,
     marker: PhantomData<T>,
 }
 
-impl<'a, T> AncestorIter<'a, T> {
-    pub(crate) fn new(world: &'a World, current: Entity) -> Self {
+impl<'a, W: GenericWorld, T> AncestorIter<'a, W, T> {
+    pub(crate) fn new(world: &'a W, current: Entity) -> Self {
         Self {
             world,
             current,
@@ -78,14 +79,17 @@ impl<'a, T> AncestorIter<'a, T> {
     }
 }
 
-impl<'a, T: 'static + Send + Sync> Iterator for AncestorIter<'a, T> {
+impl<'a, W: GenericWorld, T: 'static + Send + Sync> Iterator for AncestorIter<'a, W, T> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.world.get::<Child<T>>(self.current).ok().map(|child| {
-            self.current = child.parent;
-            child.parent
-        })
+        self.world
+            .try_get::<Child<T>>(self.current)
+            .ok()
+            .map(|child| {
+                self.current = child.parent;
+                child.parent
+            })
     }
 }
 
@@ -95,17 +99,17 @@ struct StackFrame {
     remaining: usize,
 }
 
-pub struct DepthFirstIterator<'a, T> {
-    world: &'a World,
+pub struct DepthFirstIterator<'a, W, T> {
+    world: &'a W,
     marker: PhantomData<T>,
     /// Since StackFrame is so small, use smallvec optimizations
     stack: SmallVec<[StackFrame; STACK_SIZE]>,
 }
 
-impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
-    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
+impl<'a, W: GenericWorld, T: 'static + Send + Sync> DepthFirstIterator<'a, W, T> {
+    pub(crate) fn new(world: &'a W, root: Entity) -> Self {
         let stack = world
-            .get::<Parent<T>>(root)
+            .try_get::<Parent<T>>(root)
             .and_then(|parent| {
                 let first_child = parent.first_child(world)?;
                 Ok(smallvec![StackFrame {
@@ -123,7 +127,7 @@ impl<'a, T: 'static + Send + Sync> DepthFirstIterator<'a, T> {
     }
 }
 
-impl<'a, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, T> {
+impl<'a, W: GenericWorld, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, W, T> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -134,14 +138,14 @@ impl<'a, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, T> {
         if top.remaining > 0 {
             let current = top.current;
 
-            let data = self.world.get::<Child<T>>(top.current).ok().unwrap();
+            let data = self.world.try_get::<Child<T>>(top.current).ok().unwrap();
 
             // Go to the next child in the linked list of children
             top.current = data.next;
             top.remaining -= 1;
 
             // If current is a parent, push a new stack frame with the first child
-            if let Ok(parent) = self.world.get::<Parent<T>>(current) {
+            if let Ok(parent) = self.world.try_get::<Parent<T>>(current) {
                 self.stack.push(StackFrame {
                     current: parent.first_child(self.world).unwrap(),
                     remaining: parent.num_children,
@@ -157,14 +161,14 @@ impl<'a, T: 'static + Send + Sync> Iterator for DepthFirstIterator<'a, T> {
     }
 }
 
-pub struct BreadthFirstIterator<'a, T> {
-    world: &'a World,
+pub struct BreadthFirstIterator<'a, W, T> {
+    world: &'a W,
     marker: PhantomData<T>,
     queue: VecDeque<Entity>,
 }
 
-impl<'a, T: 'static + Send + Sync> BreadthFirstIterator<'a, T> {
-    pub(crate) fn new(world: &'a World, root: Entity) -> Self {
+impl<'a, W: GenericWorld + Hierarchy, T: 'static + Send + Sync> BreadthFirstIterator<'a, W, T> {
+    pub(crate) fn new(world: &'a W, root: Entity) -> Self {
         // Add immediate children of root to queue
         let queue = world.children::<T>(root).collect();
 
@@ -176,7 +180,9 @@ impl<'a, T: 'static + Send + Sync> BreadthFirstIterator<'a, T> {
     }
 }
 
-impl<'a, T: 'static + Send + Sync> Iterator for BreadthFirstIterator<'a, T> {
+impl<'a, W: GenericWorld + Hierarchy, T: 'static + Send + Sync> Iterator
+    for BreadthFirstIterator<'a, W, T>
+{
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -16,4 +16,5 @@ keywords = ["gamedev", "ecs", "hierarchy", "hecs"]
 
 [dependencies]
 hecs = "0.7.0"
+hecs-schedule = "0.3.3"
 smallvec = "1.7.0"

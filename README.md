@@ -1,12 +1,14 @@
 # hecs-hierarchy
 
-[![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
+## hecs-hierarchy
+
+[![Cargo](https://img.shields.io/crates/v/hecs-hierarchy.svg)](https://crates.io/crates/hecs-hierarchy)
 [![Documentation](https://docs.rs/hecs-hierarchy/badge.svg)](https://docs.rs/hecs-hierarchy)
+[![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 
 Hierarchy implementation for hecs ECS.
 
 ### Features
-
 - [X] Iterate children of parent
 - [X] Lookup parent of child
 - [X] Traverse hierarchy depth first
@@ -25,8 +27,8 @@ Include both `hecs` and `hecs-hierarchy` as dependencies in your `Cargo.toml`.
 
 ```toml
 [dependencies]
-hecs = "0.6"
-hecs-hierarchy = "0.2"
+hecs = 0.5
+hecs-hierarchy = 0.1
 ```
 
 ### Motivation
@@ -43,20 +45,19 @@ from the same model.
 
 ### Usage
 
-Import the [Hierarchy](hecs_hierarchy::Hierarchy) trait which extends [hecs::World](hecs::World)
+Import the [Hierarchy](crate::Hierarchy) trait which extends [hecs::World](hecs::World)
 
-The trait [Hierarchy](hecs_hierarchy::Hierarchy) extends [hecs::World](hecs::World) with functions for
+The trait [Hierarchy](crate::Hierarchy) extends [hecs::World](hecs::World) with functions for
 manipulating and iterating the hierarchy tree.
 
 The hierarchy uses a marker type which makes it possible for a single entity to belong to
 several hierarchy trees.
 
 See the [documentation](https://docs.rs/hecs-hierarchy), more specifically the
-[Hierarchy](https://docs.rs/hecs-hierarchy/*/hecs_hierarchy/trait.Hierarchy.html)
+[Hierarchy](https://docs.rs/hecs-hierarchy/0.1.7/hecs_hierarchy/trait.Hierarchy.html)
 trait
 
 Example usage:
-
 ```rust
 use hecs_hierarchy::Hierarchy;
 
@@ -101,10 +102,10 @@ world.attach_new::<Tree, _>(root, ("Child 3",)).unwrap();
 
 // Hierarchy now looks like this:
 // Root
+// |-------- Child 3
 // |-------- Child 2
 //           |-------- Child 1
 //                     |-------- Grandchild
-// |-------- Child 3
 
 ```
 

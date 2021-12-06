@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
-use hecs::{ComponentError, Entity, World};
+use hecs::Entity;
+use hecs_schedule::{error::Result, GenericWorld};
 
 /// Component of a entity with descendents in hierarchy tree `T`.
 /// Children represent a circular linked list. Since `Parent` and child is generic over a marker
@@ -26,8 +27,8 @@ impl<T: 'static + Send + Sync> Parent<T> {
     }
 
     /// Query the parent's first child.
-    pub fn first_child(&self, world: &World) -> Result<Entity, ComponentError> {
-        Ok(world.get::<Child<T>>(self.last_child)?.next)
+    pub fn first_child<W: GenericWorld>(&self, world: &W) -> Result<Entity> {
+        Ok(world.try_get::<Child<T>>(self.last_child)?.next)
     }
 
     /// Return the parent's last child.

@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use hecs::{Entity, World};
-use hecs_hierarchy::{Child, Hierarchy, TreeBuilder};
+use hecs_hierarchy::{Child, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder};
+use hecs_schedule::SubWorldRef;
 
 #[derive(Debug)]
 struct Tree;
@@ -228,7 +229,9 @@ fn roots() {
     let mut expected = [root1, root2, root3];
     expected.sort();
 
-    let mut roots = world
+    let subworld = SubWorldRef::<HierarchyQuery<Tree>>::new(&world);
+
+    let mut roots = subworld
         .roots::<Tree>()
         .iter()
         .map(|(e, _)| e)
