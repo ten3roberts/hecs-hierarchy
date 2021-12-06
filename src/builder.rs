@@ -65,13 +65,13 @@ impl<'a, T: 'static + Send + Sync> TreeBuilder<'a, T> {
 
     /// Spawns an entity in the world wrapped in this `TreeBuilder`, without
     /// actually building a tree or attaching it to anything.
-    pub fn spawn<'b, C: DynamicBundle>(&'b self, components: C) -> Entity {
+    pub fn spawn<C: DynamicBundle>(&self, components: C) -> Entity {
         self.world.borrow_mut().spawn(components)
     }
 
     /// Spawns a tree root in the world wrapped in this `TreeBuilder`, returning
     /// a [`TreeBuilderAt`] that allows spawning children under it.
-    pub fn spawn_tree<'b, C: DynamicBundle>(&'b self, components: C) -> TreeBuilderAt<'a, 'b, T> {
+    pub fn spawn_tree<C: DynamicBundle>(&self, components: C) -> TreeBuilderAt<'a, '_, T> {
         let root = self.spawn(components);
         TreeBuilderAt {
             builder: self,
@@ -108,7 +108,7 @@ impl<'a, T: 'static + Send + Sync> TreeBuilderAt<'a, '_, T> {
     }
 
     /// Spawns an entity, without actually attaching it to anything.
-    pub fn spawn<'b, C: DynamicBundle>(&'b self, components: C) -> Entity {
+    pub fn spawn<C: DynamicBundle>(&self, components: C) -> Entity {
         self.builder.world.borrow_mut().spawn(components)
     }
 
