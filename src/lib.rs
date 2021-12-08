@@ -123,3 +123,5 @@ pub use builder::*;
 pub use components::*;
 pub use hierarchy::*;
 pub use iter::*;
+
+pub use hecs_schedule::Error;
