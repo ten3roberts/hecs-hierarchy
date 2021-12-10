@@ -233,6 +233,7 @@ fn roots() {
 
     let mut roots = subworld
         .roots::<Tree>()
+        .unwrap()
         .iter()
         .map(|(e, _)| e)
         .collect::<Vec<_>>();

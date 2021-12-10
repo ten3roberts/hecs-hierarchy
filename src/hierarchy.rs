@@ -1,7 +1,7 @@
-use std::{mem, ops::Deref};
+use std::mem;
 
 use hecs::{Component, DynamicBundle, Entity, QueryBorrow, Without, World};
-use hecs_schedule::{borrow::ComponentBorrow, error::Result, GenericWorld, SubWorldRaw};
+use hecs_schedule::{error::Result, GenericWorld};
 
 use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, Parent};
 
@@ -64,7 +64,7 @@ where
     ) -> BreadthFirstIterator<Self, T>;
 
     /// Returns an iterator over all root objects in the world
-    fn roots<T: Component>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>>;
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<Child<T>, &Parent<T>>>>;
 }
 
 impl HierarchyMut for World {
@@ -166,7 +166,7 @@ impl HierarchyMut for World {
     }
 }
 
-impl Hierarchy for World {
+impl<W: GenericWorld> Hierarchy for W {
     fn parent<T: Component>(&self, child: Entity) -> Result<Entity> {
         self.try_get::<Child<T>>(child).map(|child| child.parent)
     }
@@ -217,64 +217,8 @@ impl Hierarchy for World {
         BreadthFirstIterator::new(self, root)
     }
 
-    fn roots<T: Component>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>> {
-        self.query::<&Parent<T>>().without::<Child<T>>()
-    }
-}
-
-impl<A: Deref<Target = World>, U: ComponentBorrow> Hierarchy for SubWorldRaw<A, U> {
-    fn parent<T: Component>(&self, child: Entity) -> Result<Entity> {
-        self.get::<Child<T>>(child).map(|child| child.parent)
-    }
-
-    fn root<T: Component>(&self, child: Entity) -> Result<Entity> {
-        let mut cur = child;
-        loop {
-            match self.parent::<T>(cur) {
-                Ok(val) => cur = val,
-                Err(hecs_schedule::Error::MissingComponent(_, _)) => break,
-                Err(val) => return Err(val),
-            }
-        }
-
-        Ok(cur)
-    }
-
-    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<Self, T> {
-        self.get::<Parent<T>>(parent)
-            .and_then(|parent| {
-                let first_child = parent.first_child(self)?;
-
-                Ok(ChildrenIter::new(
-                    self,
-                    parent.num_children,
-                    Some(first_child),
-                ))
-            })
-            .unwrap_or_else(move |_| {
-                // Return an iterator that does nothing.
-                ChildrenIter::new(self, 0, None)
-            })
-    }
-
-    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<Self, T> {
-        AncestorIter::new(self, child)
-    }
-
-    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<Self, T> {
-        DepthFirstIterator::new(self, root)
-    }
-
-    /// Traverse the tree breadth first. Iterator does not include the child itself.
-    fn descendants_breadth_first<T: Component>(
-        &self,
-        root: Entity,
-    ) -> BreadthFirstIterator<Self, T> {
-        BreadthFirstIterator::new(self, root)
-    }
-
-    fn roots<T: Component>(&self) -> QueryBorrow<Without<Child<T>, &Parent<T>>> {
-        self.query::<&Parent<T>>().without::<Child<T>>()
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<Child<T>, &Parent<T>>>> {
+        Ok(self.try_query::<&Parent<T>>()?.without::<Child<T>>())
     }
 }
 
