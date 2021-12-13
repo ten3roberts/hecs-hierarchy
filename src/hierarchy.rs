@@ -49,13 +49,13 @@ where
 
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
-    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<Self, T>;
+    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<T>;
 
     /// Traverse the tree upwards. Iterator does not include the child itself.
-    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<Self, T>;
+    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<T>;
 
     /// Traverse the tree depth first. Iterator does not include the child itself.
-    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<Self, T>;
+    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<T>;
 
     /// Traverse the tree breadth first. Iterator does not include the child itself.
     fn descendants_breadth_first<T: Component>(
@@ -184,7 +184,7 @@ impl<W: GenericWorld> Hierarchy for W {
         Ok(cur)
     }
 
-    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<Self, T> {
+    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<T> {
         self.try_get::<Parent<T>>(parent)
             .and_then(|parent| {
                 let first_child = parent.first_child(self)?;
@@ -201,11 +201,11 @@ impl<W: GenericWorld> Hierarchy for W {
             })
     }
 
-    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<Self, T> {
+    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<T> {
         AncestorIter::new(self, child)
     }
 
-    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<Self, T> {
+    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<T> {
         DepthFirstIterator::new(self, root)
     }
 
