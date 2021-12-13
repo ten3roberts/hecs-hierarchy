@@ -3,7 +3,10 @@ use std::mem;
 use hecs::{Component, DynamicBundle, Entity, QueryBorrow, Without, World};
 use hecs_schedule::{error::Result, GenericWorld};
 
-use crate::{AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, Parent};
+use crate::{
+    AncestorIter, BreadthFirstIterator, Child, ChildrenIter, DepthFirstIterator, DepthFirstVisitor,
+    Parent,
+};
 
 /// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
 pub trait HierarchyMut {
@@ -56,6 +59,13 @@ where
 
     /// Traverse the tree depth first. Iterator does not include the child itself.
     fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<T>;
+
+    /// Traverse the tree depth first with an acceptance function
+    fn visit<T: Component, F: Fn(&Self, Entity) -> bool + Component>(
+        &self,
+        root: Entity,
+        accept: F,
+    ) -> DepthFirstVisitor<Self, T, F>;
 
     /// Traverse the tree breadth first. Iterator does not include the child itself.
     fn descendants_breadth_first<T: Component>(
@@ -215,6 +225,14 @@ impl<W: GenericWorld> Hierarchy for W {
         root: Entity,
     ) -> BreadthFirstIterator<Self, T> {
         BreadthFirstIterator::new(self, root)
+    }
+
+    fn visit<T: Component, F: Fn(&Self, Entity) -> bool + Component>(
+        &self,
+        root: Entity,
+        accept: F,
+    ) -> DepthFirstVisitor<Self, T, F> {
+        DepthFirstVisitor::new(self, root, accept)
     }
 
     fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<Child<T>, &Parent<T>>>> {

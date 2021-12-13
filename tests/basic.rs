@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use hecs::{Entity, World};
 use hecs_hierarchy::{Child, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder};
-use hecs_schedule::SubWorldRef;
+use hecs_schedule::{GenericWorld, SubWorldRef};
 
 #[derive(Debug)]
 struct Tree;
@@ -165,6 +165,38 @@ fn dfs() {
     assert_eq!(
         world
             .descendants_depth_first::<Tree>(root)
+            .collect::<Vec<_>>(),
+        order.iter().cloned().collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn dfs_skip() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    //           ------- Child 3
+    //                   ------- Child 4
+
+    struct Skip;
+
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+    let child3 = world
+        .attach_new::<Tree, _>(child2, ("Child3", Skip))
+        .unwrap();
+    let _child4 = world.attach_new::<Tree, _>(child3, ("Child4",)).unwrap();
+
+    let order = [child1, child2];
+
+    for child in world.visit::<Tree, _>(root, |w, e| w.try_get::<Skip>(e).is_err()) {
+        println!("{:?}", *world.get::<&str>(child).unwrap());
+    }
+
+    assert_eq!(
+        world
+            .visit::<Tree, _>(root, |w, e| w.try_get::<Skip>(e).is_err())
             .collect::<Vec<_>>(),
         order.iter().cloned().collect::<Vec<_>>()
     );

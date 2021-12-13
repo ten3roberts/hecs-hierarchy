@@ -136,6 +136,90 @@ impl<'a, T: Component> DepthFirstIterator<'a, T> {
     }
 }
 
+pub struct DepthFirstVisitor<'a, W, T: Component, F> {
+    world: &'a W,
+    children: Column<'a, Child<T>>,
+    parents: Column<'a, Parent<T>>,
+    marker: PhantomData<T>,
+    /// Since StackFrame is so small, use smallvec optimizations
+    stack: SmallVec<[StackFrame; STACK_SIZE]>,
+    accept: F,
+}
+
+impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component>
+    DepthFirstVisitor<'a, W, T, F>
+{
+    pub(crate) fn new(world: &'a W, root: Entity, accept: F) -> Self {
+        let children = world.try_get_column().unwrap();
+        let parents = world.try_get_column::<Parent<T>>().unwrap();
+
+        let stack = parents
+            .get(root)
+            .ok()
+            .and_then(|parent| {
+                if (accept)(world, root) {
+                    let first_child = parent.first_child(world).ok()?;
+                    Some(smallvec![StackFrame {
+                        current: first_child,
+                        remaining: parent.num_children,
+                    }])
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default();
+
+        Self {
+            world,
+            accept,
+            children,
+            parents,
+            stack,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component> Iterator
+    for DepthFirstVisitor<'a, W, T, F>
+{
+    type Item = Entity;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            // The the topmost stackframe
+            let top = self.stack.last_mut()?;
+            // There are more children in current stackframe
+            if top.remaining > 0 {
+                let current = top.current;
+
+                let data = self.children.get(top.current).ok().unwrap();
+
+                // Go to the next child in the linked list of children
+                top.current = data.next;
+                top.remaining -= 1;
+
+                if !(self.accept)(self.world, current) {
+                    continue;
+                }
+
+                // If current is a parent, push a new stack frame with the first child
+                if let Ok(parent) = self.parents.get(current) {
+                    self.stack.push(StackFrame {
+                        current: parent.column_first_child(&self.children).unwrap(),
+                        remaining: parent.num_children,
+                    })
+                }
+
+                return Some(current);
+            } else {
+                // End of linked list of children, pop stack frame
+                self.stack.pop();
+            }
+        }
+    }
+}
+
 impl<'a, T: Component> Iterator for DepthFirstIterator<'a, T> {
     type Item = Entity;
 
