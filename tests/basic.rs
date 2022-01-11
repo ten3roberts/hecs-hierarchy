@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
 use hecs::{Entity, World};
-use hecs_hierarchy::{Child, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder};
-use hecs_schedule::{GenericWorld, SubWorldRef};
+use hecs_hierarchy::{
+    Child, DeferredTreeBuilder, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder,
+};
+use hecs_schedule::{CommandBuffer, GenericWorld, SubWorldRef};
 
 #[derive(Debug)]
 struct Tree;
@@ -307,4 +309,71 @@ fn builder() {
             name == expected
         })
         .all(|val| val == true));
+}
+
+#[test]
+fn deferred_builder() {
+    let mut world = World::default();
+    let mut builder = DeferredTreeBuilder::<Tree>::new();
+    let root = builder
+        .add(("root",))
+        .attach_bundle(("child 1",))
+        .attach_bundle(("child 2",))
+        .attach({
+            let mut builder = DeferredTreeBuilder::from_bundle(("child 3",));
+            builder.attach_bundle(("child 3.1",));
+            builder
+        });
+
+    let mut cmd = CommandBuffer::new();
+    let root = root.build_cmd(&world, &mut cmd);
+    cmd.execute(&mut world);
+
+    let expected = ["child 1", "child 2", "child 3", "child 3.1"];
+
+    assert!(world
+        .descendants_breadth_first::<Tree>(root)
+        .zip(expected)
+        .map(|(e, expected)| {
+            let name = *world.get::<&str>(e).unwrap();
+            eprintln!("Name: {}", name);
+            name == expected
+        })
+        .all(|val| val == true));
+}
+
+#[test]
+fn single_deferred_builder() {
+    let mut world = World::default();
+    let builder = DeferredTreeBuilder::<Tree>::from_bundle(("Root",));
+
+    let root = builder.build(&mut world);
+    assert_eq!(*world.get::<&'static str>(root).unwrap(), "Root");
+}
+
+#[test]
+fn deferred_builder_simple() {
+    use hecs::*;
+    use hecs_hierarchy::*;
+
+    struct Tree;
+    let mut world = World::default();
+    let mut builder = DeferredTreeBuilder::<Tree>::from_bundle(("root",));
+    builder.attach_bundle(("child 1",));
+    builder.attach({
+        let mut builder = DeferredTreeBuilder::new();
+        builder.add("child 2");
+        builder
+    });
+
+    let root = builder.build(&mut world);
+
+    assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
+
+    for (a, b) in world
+        .descendants_depth_first::<Tree>(root)
+        .zip(["child 1", "child 2"])
+    {
+        assert_eq!(*world.get::<&str>(a).unwrap(), b)
+    }
 }
