@@ -267,3 +267,9 @@ impl<T: Component> DeferredTreeBuilder<T> {
         self
     }
 }
+
+impl<T: Component> From<EntityBuilderClone> for DeferredTreeBuilder<T> {
+    fn from(builder: EntityBuilderClone) -> Self {
+        Self::from_builder(builder)
+    }
+}
