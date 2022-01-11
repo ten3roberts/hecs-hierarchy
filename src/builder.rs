@@ -266,6 +266,16 @@ impl<T: Component> DeferredTreeBuilder<T> {
         self.children.push(Self::from_bundle(child));
         self
     }
+
+    /// Get a reference to the deferred tree builder's builder.
+    pub fn builder(&self) -> &EntityBuilderClone {
+        &self.builder
+    }
+
+    /// Get a reference to the deferred tree builder's children.
+    pub fn children(&self) -> &[DeferredTreeBuilder<T>] {
+        self.children.as_ref()
+    }
 }
 
 impl<T: Component> From<EntityBuilderClone> for DeferredTreeBuilder<T> {
