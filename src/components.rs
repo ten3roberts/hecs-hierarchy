@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use hecs::{Column, Entity};
+use hecs::{Entity, View};
 use hecs_schedule::{error::Result, GenericWorld};
 
 /// Component of a entity with descendents in hierarchy tree `T`.
@@ -32,10 +32,10 @@ impl<T: 'static + Send + Sync> Parent<T> {
     }
 
     /// Query the parent's first child.
-    pub fn column_first_child(&self, column: &Column<Child<T>>) -> Result<Entity> {
-        Ok(column
+    pub fn view_first_child(&self, view: &View<&Child<T>>) -> Result<Entity> {
+        Ok(view
             .get(self.last_child)
-            .map_err(|_| hecs_schedule::Error::NoSuchEntity(self.last_child))?
+            .ok_or_else(|| hecs_schedule::Error::NoSuchEntity(self.last_child))?
             .next)
     }
     /// Return the parent's last child.

@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, marker::PhantomData};
 
-use hecs::{Column, Component, Entity};
+use hecs::{Component, Entity, QueryBorrow};
 use hecs_schedule::GenericWorld;
 use smallvec::{smallvec, SmallVec};
 
@@ -11,7 +11,7 @@ const STACK_SIZE: usize = 64;
 /// Iterates children along with Query `Q`. Children who do not satisfy `Q` will be skipped.
 /// Count is known in advanced and will not fold iterator.
 pub struct ChildrenIter<'a, T: Component> {
-    children: Column<'a, Child<T>>,
+    query: QueryBorrow<'a, &'a Child<T>>,
     remaining: usize,
     current: Option<Entity>,
     marker: PhantomData<T>,
@@ -24,7 +24,7 @@ impl<'a, T: Component> ChildrenIter<'a, T> {
         current: Option<Entity>,
     ) -> Self {
         Self {
-            children: world.try_get_column().unwrap(),
+            query: world.try_query().unwrap(),
             remaining: num_children,
             current,
             marker: PhantomData,
@@ -46,10 +46,7 @@ where
         self.remaining -= 1;
 
         let current = self.current?;
-        let data = match self.children.get(current) {
-            Ok(data) => data,
-            Err(_) => return None,
-        };
+        let data = self.query.view().get(current)?;
 
         self.current = Some(data.next);
         Some(current)
@@ -68,7 +65,7 @@ where
 }
 
 pub struct AncestorIter<'a, T: Component> {
-    children: Column<'a, Child<T>>,
+    query: QueryBorrow<'a, &'a Child<T>>,
     current: Entity,
     marker: PhantomData<T>,
 }
@@ -76,7 +73,7 @@ pub struct AncestorIter<'a, T: Component> {
 impl<'a, T: Component> AncestorIter<'a, T> {
     pub(crate) fn new<W: GenericWorld>(world: &'a W, current: Entity) -> Self {
         Self {
-            children: world.try_get_column().unwrap(),
+            query: world.try_query().unwrap(),
             current,
             marker: PhantomData,
         }
@@ -87,7 +84,7 @@ impl<'a, T: Component> Iterator for AncestorIter<'a, T> {
     type Item = Entity;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(child) = self.children.get(self.current).ok() {
+        if let Some(child) = self.query.view().get(self.current) {
             self.current = child.parent;
             Some(child.parent)
         } else {
@@ -103,8 +100,8 @@ struct StackFrame {
 }
 
 pub struct DepthFirstIterator<'a, T: Component> {
-    children: Column<'a, Child<T>>,
-    parents: Column<'a, Parent<T>>,
+    children: QueryBorrow<'a, &'a Child<T>>,
+    parents: QueryBorrow<'a, &'a Parent<T>>,
     marker: PhantomData<T>,
     /// Since StackFrame is so small, use smallvec optimizations
     stack: SmallVec<[StackFrame; STACK_SIZE]>,
@@ -112,12 +109,12 @@ pub struct DepthFirstIterator<'a, T: Component> {
 
 impl<'a, T: Component> DepthFirstIterator<'a, T> {
     pub(crate) fn new<W: GenericWorld>(world: &'a W, root: Entity) -> Self {
-        let children = world.try_get_column().unwrap();
-        let parents = world.try_get_column::<Parent<T>>().unwrap();
+        let children = world.try_query().unwrap();
+        let mut parents = world.try_query::<&Parent<T>>().unwrap();
 
         let stack = parents
+            .view()
             .get(root)
-            .ok()
             .and_then(|parent| {
                 let first_child = parent.first_child(world).ok()?;
                 Some(smallvec![StackFrame {
@@ -138,8 +135,8 @@ impl<'a, T: Component> DepthFirstIterator<'a, T> {
 
 pub struct DepthFirstVisitor<'a, W, T: Component, F> {
     world: &'a W,
-    children: Column<'a, Child<T>>,
-    parents: Column<'a, Parent<T>>,
+    children: QueryBorrow<'a, &'a Child<T>>,
+    parents: QueryBorrow<'a, &'a Parent<T>>,
     marker: PhantomData<T>,
     /// Since StackFrame is so small, use smallvec optimizations
     stack: SmallVec<[StackFrame; STACK_SIZE]>,
@@ -150,12 +147,12 @@ impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component>
     DepthFirstVisitor<'a, W, T, F>
 {
     pub(crate) fn new(world: &'a W, root: Entity, accept: F) -> Self {
-        let children = world.try_get_column().unwrap();
-        let parents = world.try_get_column::<Parent<T>>().unwrap();
+        let children = world.try_query().unwrap();
+        let mut parents = world.try_query::<&Parent<T>>().unwrap();
 
         let stack = parents
+            .view()
             .get(root)
-            .ok()
             .and_then(|parent| {
                 if (accept)(world, root) {
                     let first_child = parent.first_child(world).ok()?;
@@ -193,7 +190,8 @@ impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component> I
             if top.remaining > 0 {
                 let current = top.current;
 
-                let data = self.children.get(top.current).ok().unwrap();
+                let children = self.children.view();
+                let data = children.get(top.current).unwrap();
 
                 // Go to the next child in the linked list of children
                 top.current = data.next;
@@ -204,9 +202,9 @@ impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component> I
                 }
 
                 // If current is a parent, push a new stack frame with the first child
-                if let Ok(parent) = self.parents.get(current) {
+                if let Some(parent) = self.parents.view().get(current) {
                     self.stack.push(StackFrame {
-                        current: parent.column_first_child(&self.children).unwrap(),
+                        current: parent.view_first_child(&children).unwrap(),
                         remaining: parent.num_children,
                     })
                 }
@@ -231,16 +229,17 @@ impl<'a, T: Component> Iterator for DepthFirstIterator<'a, T> {
         if top.remaining > 0 {
             let current = top.current;
 
-            let data = self.children.get(top.current).ok().unwrap();
+            let children = self.children.view();
+            let data = children.get(top.current).unwrap();
 
             // Go to the next child in the linked list of children
             top.current = data.next;
             top.remaining -= 1;
 
             // If current is a parent, push a new stack frame with the first child
-            if let Ok(parent) = self.parents.get(current) {
+            if let Some(parent) = self.parents.view().get(current) {
                 self.stack.push(StackFrame {
-                    current: parent.column_first_child(&self.children).unwrap(),
+                    current: parent.view_first_child(&children).unwrap(),
                     remaining: parent.num_children,
                 })
             }
