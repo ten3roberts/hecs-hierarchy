@@ -164,7 +164,7 @@ impl<'a, T: 'static + Send + Sync> TreeBuilderAt<'a, '_, T> {
 ///     builder
 /// });
 
-/// let root = builder.build(&mut world);
+/// let root = builder.spawn(&mut world);
 
 /// assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
 
@@ -176,7 +176,6 @@ impl<'a, T: 'static + Send + Sync> TreeBuilderAt<'a, '_, T> {
 /// }
 ///
 /// ```
-#[derive(Clone)]
 pub struct DeferredTreeBuilder<T> {
     children: Vec<DeferredTreeBuilder<T>>,
     builder: EntityBuilderClone,
@@ -211,25 +210,25 @@ impl<T: Component> DeferredTreeBuilder<T> {
         }
     }
 
-    pub fn build(&self, world: &mut World) -> Entity {
-        let builder = self.builder.clone().build();
+    pub fn spawn(self, world: &mut World) -> Entity {
+        let builder = self.builder.build();
         let parent = world.spawn(&builder);
 
-        for child in &self.children {
-            let child = child.build(world);
+        for child in self.children {
+            let child = child.spawn(world);
             world.attach::<T>(child, parent).unwrap();
         }
 
         parent
     }
 
-    pub fn build_cmd(&self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
-        let builder = self.builder.clone().build();
+    pub fn spawn_deferred(self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
+        let builder = self.builder.build();
         let parent = world.reserve();
         cmd.insert(parent, &builder);
 
-        for child in &self.children {
-            let child = child.build_cmd(world, cmd);
+        for child in self.children {
+            let child = child.spawn_deferred(world, cmd);
             cmd.write(move |w: &mut World| {
                 w.attach::<T>(child, parent).unwrap();
             });
@@ -286,5 +285,15 @@ impl<T: Component> DeferredTreeBuilder<T> {
 impl<T: Component> From<EntityBuilderClone> for DeferredTreeBuilder<T> {
     fn from(builder: EntityBuilderClone) -> Self {
         Self::from_builder(builder)
+    }
+}
+
+impl<T> Clone for DeferredTreeBuilder<T> {
+    fn clone(&self) -> Self {
+        Self {
+            children: self.children.clone(),
+            builder: self.builder.clone(),
+            marker: PhantomData,
+        }
     }
 }

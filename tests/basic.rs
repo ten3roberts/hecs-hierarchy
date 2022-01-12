@@ -315,7 +315,7 @@ fn builder() {
 fn deferred_builder() {
     let mut world = World::default();
     let mut builder = DeferredTreeBuilder::<Tree>::new();
-    let root = builder
+    builder
         .add(("root",))
         .attach_bundle(("child 1",))
         .attach_bundle(("child 2",))
@@ -326,7 +326,7 @@ fn deferred_builder() {
         });
 
     let mut cmd = CommandBuffer::new();
-    let root = root.build_cmd(&world, &mut cmd);
+    let root = builder.spawn_deferred(&world, &mut cmd);
     cmd.execute(&mut world);
 
     let expected = ["child 1", "child 2", "child 3", "child 3.1"];
@@ -347,7 +347,7 @@ fn single_deferred_builder() {
     let mut world = World::default();
     let builder = DeferredTreeBuilder::<Tree>::from_bundle(("Root",));
 
-    let root = builder.build(&mut world);
+    let root = builder.spawn(&mut world);
     assert_eq!(*world.get::<&'static str>(root).unwrap(), "Root");
 }
 
@@ -366,7 +366,7 @@ fn deferred_builder_simple() {
         builder
     });
 
-    let root = builder.build(&mut world);
+    let root = builder.spawn(&mut world);
 
     assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
 
