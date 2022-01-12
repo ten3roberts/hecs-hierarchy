@@ -1,6 +1,6 @@
 [package]
 name = "hecs-hierarchy"
-version = "0.9.3"
+version = "0.9.4"
 authors = ["Tim Roberts <ten3roberts@gmail.com>"]
 edition = "2018"
 
