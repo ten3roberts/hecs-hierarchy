@@ -276,6 +276,11 @@ impl<T: Component> DeferredTreeBuilder<T> {
     pub fn children(&self) -> &[DeferredTreeBuilder<T>] {
         self.children.as_ref()
     }
+
+    /// Get a mutable reference to the deferred tree builder's builder.
+    pub fn builder_mut(&mut self) -> &mut EntityBuilderClone {
+        &mut self.builder
+    }
 }
 
 impl<T: Component> From<EntityBuilderClone> for DeferredTreeBuilder<T> {
