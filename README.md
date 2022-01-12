@@ -59,7 +59,7 @@ trait
 
 Example usage:
 ```rust
-use hecs_hierarchy::Hierarchy;
+use hecs_hierarchy::*;
 
 // Marker type which allows several hierarchies.
 struct Tree;
