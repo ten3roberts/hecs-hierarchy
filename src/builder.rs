@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, World};
 use hecs_schedule::{CommandBuffer, GenericWorld};
+use once_cell::sync::OnceCell;
 
 use crate::{HierarchyMut, TreeBuilderClone};
 
@@ -40,6 +41,7 @@ pub struct TreeBuilder<T> {
     children: Vec<TreeBuilder<T>>,
     builder: EntityBuilder,
     marker: PhantomData<T>,
+    reserved: OnceCell<Entity>,
 }
 
 impl<T: Component> TreeBuilder<T> {
@@ -49,13 +51,20 @@ impl<T: Component> TreeBuilder<T> {
             children: Vec::new(),
             builder: EntityBuilder::new(),
             marker: PhantomData,
+            reserved: OnceCell::new(),
         }
+    }
+
+    /// Reserve the entity which this node will spawn
+    pub fn reserve(&self, world: &impl GenericWorld) -> Entity {
+        *self.reserved.get_or_init(|| world.reserve())
     }
 
     /// Spawn the whole tree into the world
     pub fn spawn(&mut self, world: &mut World) -> Entity {
+        let parent = self.reserve(world);
         let builder = self.builder.build();
-        let parent = world.spawn(builder);
+        world.insert(parent, builder).unwrap();
 
         for mut child in self.children.drain(..) {
             let child = child.spawn(world);
@@ -68,8 +77,8 @@ impl<T: Component> TreeBuilder<T> {
     /// Spawn the whole tree into a commandbuffer.
     /// The world is required for reserving entities.
     pub fn spawn_deferred(&mut self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
+        let parent = self.reserve(world);
         let builder = self.builder.build();
-        let parent = world.reserve();
         cmd.insert(parent, builder);
 
         for mut child in self.children.drain(..) {
@@ -147,6 +156,7 @@ impl<B: DynamicBundle, T: Component> From<B> for TreeBuilder<T> {
             children: Vec::new(),
             builder,
             marker: PhantomData,
+            reserved: OnceCell::new(),
         }
     }
 }
@@ -166,6 +176,7 @@ impl<T: Component> From<TreeBuilderClone<T>> for TreeBuilder<T> {
             children,
             builder,
             marker: PhantomData,
+            reserved: tree.reserved,
         }
     }
 }

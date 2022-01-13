@@ -355,10 +355,6 @@ fn builder_clone_simple() {
 
 #[test]
 fn builder_clone() {
-    use hecs::*;
-    use hecs_hierarchy::*;
-
-    struct Tree;
     let mut world = World::default();
     let mut builder = TreeBuilderClone::<Tree>::from(("root",));
     builder.attach(("child 1",));
@@ -371,6 +367,33 @@ fn builder_clone() {
     let mut tree: TreeBuilder<_> = builder.into();
 
     let root = tree.spawn(&mut world);
+
+    assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
+
+    for (a, b) in world
+        .descendants_depth_first::<Tree>(root)
+        .zip(["child 1", "child 2"])
+    {
+        assert_eq!(*world.get::<&str>(a).unwrap(), b)
+    }
+}
+
+#[test]
+fn reserve() {
+    let mut world = World::default();
+    let mut builder = TreeBuilderClone::<Tree>::from(("root",));
+    builder.attach(("child 1",));
+    builder.attach({
+        let mut builder = TreeBuilderClone::new();
+        builder.add("child 2");
+        builder
+    });
+
+    let mut tree: TreeBuilder<_> = builder.into();
+
+    let root = tree.reserve(&world);
+
+    tree.spawn(&mut world);
 
     assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
 

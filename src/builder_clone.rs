@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use hecs::{Component, DynamicBundleClone, Entity, EntityBuilderClone, World};
 use hecs_schedule::{CommandBuffer, GenericWorld};
+use once_cell::sync::OnceCell;
 
 use crate::HierarchyMut;
 
@@ -10,6 +11,7 @@ pub struct TreeBuilderClone<T> {
     pub(crate) children: Vec<TreeBuilderClone<T>>,
     pub(crate) builder: EntityBuilderClone,
     pub(crate) marker: PhantomData<T>,
+    pub(crate) reserved: OnceCell<Entity>,
 }
 
 impl<T: Component> TreeBuilderClone<T> {
@@ -19,13 +21,20 @@ impl<T: Component> TreeBuilderClone<T> {
             children: Vec::new(),
             builder: EntityBuilderClone::new(),
             marker: PhantomData,
+            reserved: OnceCell::new(),
         }
+    }
+
+    /// Reserve the entity which this node will spawn
+    pub fn reserve(&self, world: &impl GenericWorld) -> Entity {
+        *self.reserved.get_or_init(|| world.reserve())
     }
 
     /// Spawn the whole tree into the world
     pub fn spawn(self, world: &mut World) -> Entity {
+        let parent = self.reserve(world);
         let builder = self.builder.build();
-        let parent = world.spawn(&builder);
+        world.insert(parent, &builder).unwrap();
 
         for child in self.children {
             let child = child.spawn(world);
@@ -38,8 +47,8 @@ impl<T: Component> TreeBuilderClone<T> {
     /// Spawn the whole tree into a commandbuffer.
     /// The world is required for reserving entities.
     pub fn spawn_deferred(self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
+        let parent = self.reserve(world);
         let builder = self.builder.build();
-        let parent = world.reserve();
         cmd.insert(parent, &builder);
 
         for child in self.children {
@@ -114,6 +123,7 @@ impl<T> Clone for TreeBuilderClone<T> {
             children: self.children.clone(),
             builder: self.builder.clone(),
             marker: PhantomData,
+            reserved: OnceCell::new(),
         }
     }
 }
@@ -127,6 +137,7 @@ impl<B: DynamicBundleClone, T: Component> From<B> for TreeBuilderClone<T> {
             children: Vec::new(),
             builder,
             marker: PhantomData,
+            reserved: OnceCell::new(),
         }
     }
 }
