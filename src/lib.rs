@@ -116,10 +116,12 @@
 
 mod builder;
 mod components;
+mod deferred_builder;
 mod hierarchy;
 mod iter;
 
 pub use builder::*;
+pub use deferred_builder::*;
 pub use components::*;
 pub use hierarchy::*;
 pub use iter::*;
