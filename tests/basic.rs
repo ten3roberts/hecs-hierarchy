@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use hecs::{Entity, World};
 use hecs_hierarchy::{
-    Child, DeferredTreeBuilder, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder,
+    Child, Hierarchy, HierarchyMut, HierarchyQuery, TreeBuilder, TreeBuilderClone,
 };
 use hecs_schedule::{CommandBuffer, GenericWorld, SubWorldRef};
 
@@ -285,20 +285,20 @@ fn roots() {
 #[test]
 fn builder() {
     let mut world = World::default();
-    let builder = TreeBuilder::<Tree>::new(&mut world);
-    let root = builder
-        .spawn_tree(("root",))
-        .attach_new(("child 1",))
-        .attach_new(("child 2",))
-        .attach(
-            builder
-                .spawn_tree(("child 3",))
-                .attach_new(("child 3.1",))
-                .entity(),
-        )
-        .entity();
+    let mut builder = TreeBuilder::<Tree>::new();
 
-    let expected = ["child 1", "child 2", "child 3", "child 3.1"];
+    let root = builder
+        .add("root")
+        .attach(("child 1",))
+        .attach(("child 2",))
+        .attach_tree(
+            TreeBuilder::from(("child 3",))
+                .attach_move(("child 3.1",))
+                .attach_move(("child 3.2",)),
+        )
+        .spawn(&mut world);
+
+    let expected = ["child 1", "child 2", "child 3", "child 3.1", "child 3.2"];
 
     assert!(world
         .descendants_breadth_first::<Tree>(root)
@@ -312,24 +312,25 @@ fn builder() {
 }
 
 #[test]
-fn deferred_builder() {
+fn builder_clone_deferred() {
     let mut world = World::default();
-    let mut builder = DeferredTreeBuilder::<Tree>::new();
-    builder
-        .add(("root",))
-        .attach_bundle(("child 1",))
-        .attach_bundle(("child 2",))
-        .attach({
-            let mut builder = DeferredTreeBuilder::from_bundle(("child 3",));
-            builder.attach_bundle(("child 3.1",));
-            builder
-        });
-
     let mut cmd = CommandBuffer::new();
-    let root = builder.spawn_deferred(&world, &mut cmd);
+
+    let root = TreeBuilderClone::<Tree>::new()
+        .add(("root",))
+        .attach(("child 1",))
+        .attach(("child 2",))
+        .attach_tree(
+            TreeBuilderClone::from(("child 3",))
+                .attach_move(("child 3.1",))
+                .attach_move(("child 3.2",)),
+        )
+        .clone() // Demonstrate cloning
+        .spawn_deferred(&world, &mut cmd);
+
     cmd.execute(&mut world);
 
-    let expected = ["child 1", "child 2", "child 3", "child 3.1"];
+    let expected = ["child 1", "child 2", "child 3", "child 3.1", "child 3.2"];
 
     assert!(world
         .descendants_breadth_first::<Tree>(root)
@@ -343,25 +344,26 @@ fn deferred_builder() {
 }
 
 #[test]
-fn single_deferred_builder() {
+fn builder_clone_simple() {
     let mut world = World::default();
-    let builder = DeferredTreeBuilder::<Tree>::from_bundle(("Root",));
+    let builder = TreeBuilderClone::<Tree>::from(("Root",));
 
     let root = builder.spawn(&mut world);
+
     assert_eq!(*world.get::<&'static str>(root).unwrap(), "Root");
 }
 
 #[test]
-fn deferred_builder_simple() {
+fn builder_clone() {
     use hecs::*;
     use hecs_hierarchy::*;
 
     struct Tree;
     let mut world = World::default();
-    let mut builder = DeferredTreeBuilder::<Tree>::from_bundle(("root",));
-    builder.attach_bundle(("child 1",));
+    let mut builder = TreeBuilderClone::<Tree>::from(("root",));
+    builder.attach(("child 1",));
     builder.attach({
-        let mut builder = DeferredTreeBuilder::new();
+        let mut builder = TreeBuilderClone::new();
         builder.add("child 2");
         builder
     });

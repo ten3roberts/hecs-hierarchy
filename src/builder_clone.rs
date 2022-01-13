@@ -1,63 +1,33 @@
 use std::marker::PhantomData;
 
-use hecs::{Component, DynamicBundle, Entity, EntityBuilder, World};
+use hecs::{Component, DynamicBundleClone, Entity, EntityBuilderClone, World};
 use hecs_schedule::{CommandBuffer, GenericWorld};
 
 use crate::HierarchyMut;
 
-/// Ergonomically construct trees without knowledge of world.
-///
-/// This struct builds the world using [EntityBuilder](hecs::EntityBuilder)
-///
-/// # Example
-/// ```rust
-/// use hecs_hierarchy::*;
-/// use hecs::*;
-///
-/// struct Tree;
-/// let mut world = World::default();
-/// let mut builder = TreeBuilder::<Tree>::from(("root",));
-/// builder.attach(("child 1",));
-/// builder.attach({
-///     let mut builder = TreeBuilder::new();
-///     builder.add("child 2");
-///     builder
-/// });
-
-/// let root = builder.spawn(&mut world);
-
-/// assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
-
-/// for (a, b) in world
-///     .descendants_depth_first::<Tree>(root)
-///     .zip(["child 1", "child 2"])
-/// {
-///     assert_eq!(*world.get::<&str>(a).unwrap(), b)
-/// }
-///
-/// ```
-pub struct TreeBuilder<T> {
-    children: Vec<TreeBuilder<T>>,
-    builder: EntityBuilder,
+/// Cloneable version of the [crate::TreeBuilder]
+pub struct TreeBuilderClone<T> {
+    children: Vec<TreeBuilderClone<T>>,
+    builder: EntityBuilderClone,
     marker: PhantomData<T>,
 }
 
-impl<T: Component> TreeBuilder<T> {
+impl<T: Component> TreeBuilderClone<T> {
     /// Construct a new empty tree
     pub fn new() -> Self {
         Self {
             children: Vec::new(),
-            builder: EntityBuilder::new(),
+            builder: EntityBuilderClone::new(),
             marker: PhantomData,
         }
     }
 
     /// Spawn the whole tree into the world
-    pub fn spawn(&mut self, world: &mut World) -> Entity {
+    pub fn spawn(self, world: &mut World) -> Entity {
         let builder = self.builder.build();
-        let parent = world.spawn(builder);
+        let parent = world.spawn(&builder);
 
-        for mut child in self.children.drain(..) {
+        for child in self.children {
             let child = child.spawn(world);
             world.attach::<T>(child, parent).unwrap();
         }
@@ -67,12 +37,12 @@ impl<T: Component> TreeBuilder<T> {
 
     /// Spawn the whole tree into a commandbuffer.
     /// The world is required for reserving entities.
-    pub fn spawn_deferred(&mut self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
+    pub fn spawn_deferred(self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
         let builder = self.builder.build();
         let parent = world.reserve();
-        cmd.insert(parent, builder);
+        cmd.insert(parent, &builder);
 
-        for mut child in self.children.drain(..) {
+        for child in self.children {
             let child = child.spawn_deferred(world, cmd);
             cmd.write(move |w: &mut World| {
                 w.attach::<T>(child, parent).unwrap();
@@ -82,13 +52,13 @@ impl<T: Component> TreeBuilder<T> {
     }
 
     /// Add a component to the root
-    pub fn add(&mut self, component: impl Component) -> &mut Self {
+    pub fn add(&mut self, component: impl Component + Clone) -> &mut Self {
         self.builder.add(component);
         self
     }
 
     /// Add a bundle to the root
-    pub fn add_bundle(&mut self, bundle: impl DynamicBundle) -> &mut Self {
+    pub fn add_bundle(&mut self, bundle: impl DynamicBundleClone) -> &mut Self {
         self.builder.add_bundle(bundle);
         self
     }
@@ -99,7 +69,7 @@ impl<T: Component> TreeBuilder<T> {
         self
     }
 
-    /// Attach a new leaf as a bundle
+    /// Attach a new leaf
     pub fn attach(&mut self, child: impl Into<Self>) -> &mut Self {
         self.children.push(child.into());
         self
@@ -128,19 +98,29 @@ impl<T: Component> TreeBuilder<T> {
     }
 
     /// Get a reference to the deferred tree builder's root.
-    pub fn root(&self) -> &EntityBuilder {
+    pub fn root(&self) -> &EntityBuilderClone {
         &self.builder
     }
 
-    /// Get a mutable reference to the deferred tree builder's root.
-    pub fn root_mut(&mut self) -> &mut EntityBuilder {
+    /// Get a mutable reference to the deferred tree builder's builder.
+    pub fn root_mut(&mut self) -> &mut EntityBuilderClone {
         &mut self.builder
     }
 }
 
-impl<B: DynamicBundle, T: Component> From<B> for TreeBuilder<T> {
+impl<T> Clone for TreeBuilderClone<T> {
+    fn clone(&self) -> Self {
+        Self {
+            children: self.children.clone(),
+            builder: self.builder.clone(),
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<B: DynamicBundleClone, T: Component> From<B> for TreeBuilderClone<T> {
     fn from(bundle: B) -> Self {
-        let mut builder = EntityBuilder::new();
+        let mut builder = EntityBuilderClone::new();
         builder.add_bundle(bundle);
 
         Self {

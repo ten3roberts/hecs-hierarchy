@@ -15,6 +15,7 @@ Hierarchy implementation for hecs ECS.
 - [X] Traverse hierarchy breadth first
 - [X] Traverse ancestors
 - [X] Detach child from hierarchy
+- [X] Ergonomic tree building
 - [ ] Reverse iteration
 - [ ] Sorting
 - [ ] (Optional) associated data to relation

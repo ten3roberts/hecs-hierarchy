@@ -115,13 +115,13 @@
 //! - [shipyard-hierarchy](https://github.com/dakom/shipyard-hierarchy)
 
 mod builder;
+mod builder_clone;
 mod components;
-mod deferred_builder;
 mod hierarchy;
 mod iter;
 
 pub use builder::*;
-pub use deferred_builder::*;
+pub use builder_clone::*;
 pub use components::*;
 pub use hierarchy::*;
 pub use iter::*;
