@@ -7,9 +7,9 @@ use crate::HierarchyMut;
 
 /// Cloneable version of the [crate::TreeBuilder]
 pub struct TreeBuilderClone<T> {
-    children: Vec<TreeBuilderClone<T>>,
-    builder: EntityBuilderClone,
-    marker: PhantomData<T>,
+    pub(crate) children: Vec<TreeBuilderClone<T>>,
+    pub(crate) builder: EntityBuilderClone,
+    pub(crate) marker: PhantomData<T>,
 }
 
 impl<T: Component> TreeBuilderClone<T> {

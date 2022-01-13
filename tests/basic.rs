@@ -368,7 +368,9 @@ fn builder_clone() {
         builder
     });
 
-    let root = builder.spawn(&mut world);
+    let mut tree: TreeBuilder<_> = builder.into();
+
+    let root = tree.spawn(&mut world);
 
     assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
 

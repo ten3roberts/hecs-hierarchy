@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use hecs::{Component, DynamicBundle, Entity, EntityBuilder, World};
 use hecs_schedule::{CommandBuffer, GenericWorld};
 
-use crate::HierarchyMut;
+use crate::{HierarchyMut, TreeBuilderClone};
 
 /// Ergonomically construct trees without knowledge of world.
 ///
@@ -145,6 +145,25 @@ impl<B: DynamicBundle, T: Component> From<B> for TreeBuilder<T> {
 
         Self {
             children: Vec::new(),
+            builder,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<T: Component> From<TreeBuilderClone<T>> for TreeBuilder<T> {
+    fn from(tree: TreeBuilderClone<T>) -> Self {
+        let mut builder = EntityBuilder::new();
+        builder.add_bundle(&tree.builder.build());
+
+        let children = tree
+            .children
+            .into_iter()
+            .map(|child| child.into())
+            .collect();
+
+        Self {
+            children,
             builder,
             marker: PhantomData,
         }
