@@ -96,6 +96,15 @@ impl<T: Component> TreeBuilder<T> {
         self
     }
 
+    // Adds a component to all nodes
+    pub fn add_all(&mut self, component: impl Component + Clone) -> &mut Self {
+        for child in &mut self.children {
+            child.add_all(component.clone());
+        }
+        self.builder.add(component);
+        self
+    }
+
     /// Add a bundle to the root
     pub fn add_bundle(&mut self, bundle: impl DynamicBundle) -> &mut Self {
         self.builder.add_bundle(bundle);

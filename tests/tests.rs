@@ -296,6 +296,7 @@ fn builder() {
                 .attach_move(("child 3.1",))
                 .attach_move(("child 3.2",)),
         )
+        .add_all(5.0_f32)
         .spawn(&mut world);
 
     let expected = ["child 1", "child 2", "child 3", "child 3.1", "child 3.2"];
@@ -306,7 +307,9 @@ fn builder() {
         .map(|(e, expected)| {
             let name = *world.get::<&str>(e).unwrap();
             eprintln!("Name: {}", name);
-            name == expected
+
+            let val = *world.get::<f32>(e).unwrap();
+            name == expected && val == 5.0
         })
         .all(|val| val == true));
 }
