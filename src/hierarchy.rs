@@ -28,7 +28,8 @@ pub trait HierarchyMut {
     fn detach_all<T: Component>(&mut self, entity: Entity) -> Result<()>;
 
     /// Detaches all children of parent.
-    fn detach_children<T: Component>(&mut self, parent: Entity) -> Result<()>;
+    fn detach_children<T: Component>(&mut self, parent: Entity) -> Result<Vec<Entity>>;
+    fn despawn_children<T: Component>(&mut self, parent: Entity) -> Result<()>;
 
     /// Detach the child from tree `T`. The children of `child` will not remain in hierachy, but will
     /// remain attached to `child`, which means a later attach also will attach the children of `child`
@@ -129,12 +130,28 @@ impl HierarchyMut for World {
     }
 
     /// Detaches all children of parent.
-    fn detach_children<T: Component>(&mut self, parent: Entity) -> Result<()> {
+    fn detach_children<T: Component>(&mut self, parent: Entity) -> Result<Vec<Entity>> {
+        let children = self.children::<T>(parent).collect::<Vec<Entity>>();
+
+        children.iter().try_for_each(|child| -> Result<_> {
+            self.try_remove_one::<Child<T>>(*child)?;
+            Ok(())
+        })?;
+
+        self.remove_one::<Parent<T>>(parent).unwrap();
+
+        Ok(children)
+    }
+
+    /// Detaches all children of parent.
+    fn despawn_children<T: Component>(&mut self, parent: Entity) -> Result<()> {
         let children = self.children::<T>(parent).collect::<Vec<Entity>>();
 
         children
             .iter()
-            .try_for_each(|child| self.try_remove_one::<Child<T>>(*child).map(|_| ()))?;
+            .for_each(|child| self.despawn_all::<Child<T>>(*child));
+
+        self.remove_one::<Parent<T>>(parent).unwrap();
 
         Ok(())
     }
