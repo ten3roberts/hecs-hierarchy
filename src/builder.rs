@@ -154,6 +154,11 @@ impl<T: Component> TreeBuilder<T> {
     pub fn root_mut(&mut self) -> &mut EntityBuilder {
         &mut self.builder
     }
+
+    /// Get a mutable reference to the tree builder's children.
+    pub fn children_mut(&mut self) -> &mut Vec<TreeBuilder<T>> {
+        &mut self.children
+    }
 }
 
 impl<B: DynamicBundle, T: Component> From<B> for TreeBuilder<T> {

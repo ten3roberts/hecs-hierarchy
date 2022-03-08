@@ -124,6 +124,11 @@ impl<T: Component> TreeBuilderClone<T> {
     pub fn root_mut(&mut self) -> &mut EntityBuilderClone {
         &mut self.builder
     }
+
+    /// Get a mutable reference to the tree builder clone's children.
+    pub fn children_mut(&mut self) -> &mut Vec<TreeBuilderClone<T>> {
+        &mut self.children
+    }
 }
 
 impl<T> Clone for TreeBuilderClone<T> {
