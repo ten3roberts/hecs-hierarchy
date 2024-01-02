@@ -25,8 +25,8 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hecs = 0.5
-//! hecs-hierarchy = 0.1
+//! hecs = 0.10
+//! hecs-hierarchy = 0.12
 //! ```
 //!
 //! ## Motivation
@@ -74,18 +74,20 @@
 //! world.attach::<Tree>(child, root).unwrap();
 //!
 //! // Iterate children
+//! println!("Iterating children:");
 //! for child in world.children::<Tree>(root) {
-//!     let name = world.get::<&str>(child).unwrap();
-//!     println!("Child: {:?} {}", child, *name);
+//!     let name = world.get::<&&str>(child).unwrap();
+//!     println!("  Child: {:?} {}", child, *name);
 //! }
 //!
 //! // Add a grandchild
 //! world.attach_new::<Tree, _>(child, ("Grandchild",)).unwrap();
 //!
 //! // Iterate recursively
-//! for child in world.descendants_depth_first::<Tree>(root) {
-//!     let name = world.get::<&str>(child).unwrap();
-//!     println!("Child: {:?} {}", child, *name)
+//! println!("Iterating descendants recursively:");
+//! for descendant in world.descendants_depth_first::<Tree>(root) {
+//!     let name = world.get::<&&str>(descendant).unwrap();
+//!     println!("  Descendant: {:?} {}", descendant, *name)
 //! }
 //!
 //! // Detach `child` and `grandchild`
@@ -104,6 +106,13 @@
 //! // |-------- Child 2
 //! //           |-------- Child 1
 //! //                     |-------- Grandchild
+//!
+//! // Iterate recursively
+//! println!("Iterating descendants recursively:");
+//! for descendant in world.descendants_depth_first::<Tree>(root) {
+//!     let name = world.get::<&&str>(descendant).unwrap();
+//!     println!("  Descendant: {:?} {}", descendant, *name)
+//! }
 //!
 //! ```
 //!

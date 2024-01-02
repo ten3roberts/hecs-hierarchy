@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Iterate children
     for child in world.children::<Tree>(root) {
-        let name = world.get::<&str>(child).unwrap();
+        let name = world.get::<&&str>(child).unwrap();
         println!("Child: {:?} {}", child, *name);
     }
 
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Iterate recursively
     for child in world.descendants_depth_first::<Tree>(root) {
-        let name = world.get::<&str>(child).unwrap();
+        let name = world.get::<&&str>(child).unwrap();
         println!("Child: {:?} {}", child, *name)
     }
 
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn print_tree<T: 'static + Send + Sync>(world: &World, root: Entity) {
     fn internal<T: 'static + Send + Sync>(world: &World, parent: Entity, depth: usize) {
         for child in world.children::<T>(parent) {
-            let name = world.get::<&str>(child).unwrap();
+            let name = world.get::<&&str>(child).unwrap();
             println!(
                 "{}|-------- {}",
                 std::iter::repeat(" ")
@@ -79,7 +79,7 @@ fn print_tree<T: 'static + Send + Sync>(world: &World, root: Entity) {
         }
     }
 
-    let name = world.get::<&str>(root).unwrap();
+    let name = world.get::<&&str>(root).unwrap();
     println!("{}", *name);
     internal::<T>(world, root, 1)
 }

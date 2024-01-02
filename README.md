@@ -78,7 +78,7 @@ world.attach::<Tree>(child, root).unwrap();
 
 // Iterate children
 for child in world.children::<Tree>(root) {
-    let name = world.get::<&str>(child).unwrap();
+    let name = world.get::<&&str>(child).unwrap();
     println!("Child: {:?} {}", child, *name);
 }
 
@@ -87,7 +87,7 @@ world.attach_new::<Tree, _>(child, ("Grandchild",)).unwrap();
 
 // Iterate recursively
 for child in world.descendants_depth_first::<Tree>(root) {
-    let name = world.get::<&str>(child).unwrap();
+    let name = world.get::<&&str>(child).unwrap();
     println!("Child: {:?} {}", child, *name)
 }
 

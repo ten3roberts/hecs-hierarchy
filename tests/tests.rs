@@ -27,13 +27,13 @@ fn basic() {
     }
 
     for child in world.children::<Tree>(root) {
-        let name = world.get::<String>(child).unwrap();
+        let name = world.get::<&String>(child).unwrap();
 
         println!(
             "Child: {:?} {:?}; {:?}",
             child,
             *name,
-            *world.get::<Child<Tree>>(child).unwrap()
+            *world.get::<&Child<Tree>>(child).unwrap()
         );
 
         if !expected_children.remove(&child) {
@@ -64,7 +64,7 @@ fn ancestors() {
         world
             .ancestors::<Tree>(children.pop().unwrap())
             .map(|parent| {
-                println!("{}", *world.get::<String>(parent).unwrap());
+                println!("{}", *world.get::<&String>(parent).unwrap());
                 parent
             })
             .collect::<Vec<_>>(),
@@ -96,8 +96,8 @@ fn detach() {
     for child in world.children::<Tree>(root) {
         println!(
             "{:?}, {:?}",
-            *world.get::<&str>(child).unwrap(),
-            *world.get::<Child<Tree>>(child).unwrap()
+            *world.get::<&&str>(child).unwrap(),
+            *world.get::<&Child<Tree>>(child).unwrap()
         );
     }
 
@@ -133,8 +133,8 @@ fn reattach() {
     for child in world.descendants_depth_first::<Tree>(root) {
         println!(
             "{:?}, {:?}",
-            *world.get::<&str>(child).unwrap(),
-            *world.get::<Child<Tree>>(child).unwrap()
+            *world.get::<&&str>(child).unwrap(),
+            *world.get::<&Child<Tree>>(child).unwrap()
         );
     }
 
@@ -161,7 +161,7 @@ fn dfs() {
     let order = [child1, child2, child3, child4];
 
     for child in world.descendants_depth_first::<Tree>(root) {
-        println!("{:?}", *world.get::<&str>(child).unwrap());
+        println!("{:?}", *world.get::<&&str>(child).unwrap());
     }
 
     assert_eq!(
@@ -193,7 +193,7 @@ fn dfs_skip() {
     let order = [child1, child2];
 
     for child in world.visit::<Tree, _>(root, |w, e| w.try_get::<Skip>(e).is_err()) {
-        println!("{:?}", *world.get::<&str>(child).unwrap());
+        println!("{:?}", *world.get::<&&str>(child).unwrap());
     }
 
     assert_eq!(
@@ -221,7 +221,7 @@ fn bfs() {
     let order = [child1, child2, child3, child4];
 
     for child in world.descendants_breadth_first::<Tree>(root) {
-        println!("{:?}", *world.get::<&str>(child).unwrap());
+        println!("{:?}", *world.get::<&&str>(child).unwrap());
     }
 
     assert_eq!(
@@ -305,10 +305,10 @@ fn builder() {
         .descendants_breadth_first::<Tree>(root)
         .zip(expected)
         .map(|(e, expected)| {
-            let name = *world.get::<&str>(e).unwrap();
+            let name = *world.get::<&&str>(e).unwrap();
             eprintln!("Name: {}", name);
 
-            let val = *world.get::<f32>(e).unwrap();
+            let val = *world.get::<&f32>(e).unwrap();
             name == expected && val == 5.0
         })
         .all(|val| val == true));
@@ -339,7 +339,7 @@ fn builder_clone_deferred() {
         .descendants_breadth_first::<Tree>(root)
         .zip(expected)
         .map(|(e, expected)| {
-            let name = *world.get::<&str>(e).unwrap();
+            let name = *world.get::<&&str>(e).unwrap();
             eprintln!("Name: {}", name);
             name == expected
         })
@@ -353,7 +353,7 @@ fn builder_clone_simple() {
 
     let root = builder.spawn(&mut world);
 
-    assert_eq!(*world.get::<&'static str>(root).unwrap(), "Root");
+    assert_eq!(*world.get::<&&'static str>(root).unwrap(), "Root");
 }
 
 #[test]
@@ -371,13 +371,13 @@ fn builder_clone() {
 
     let root = tree.spawn(&mut world);
 
-    assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
+    assert_eq!(*world.get::<&&'static str>(root).unwrap(), "root");
 
     for (a, b) in world
         .descendants_depth_first::<Tree>(root)
         .zip(["child 1", "child 2"])
     {
-        assert_eq!(*world.get::<&str>(a).unwrap(), b)
+        assert_eq!(*world.get::<&&str>(a).unwrap(), b)
     }
 }
 
@@ -398,12 +398,12 @@ fn reserve() {
 
     tree.spawn(&mut world);
 
-    assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
+    assert_eq!(*world.get::<&&'static str>(root).unwrap(), "root");
 
     for (a, b) in world
         .descendants_depth_first::<Tree>(root)
         .zip(["child 1", "child 2"])
     {
-        assert_eq!(*world.get::<&str>(a).unwrap(), b)
+        assert_eq!(*world.get::<&&str>(a).unwrap(), b)
     }
 }
