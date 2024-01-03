@@ -27,13 +27,13 @@ use crate::{HierarchyMut, TreeBuilderClone};
 
 /// let root = builder.spawn(&mut world);
 
-/// assert_eq!(*world.get::<&'static str>(root).unwrap(), "root");
+/// assert_eq!(*world.get::<&&'static str>(root).unwrap(), "root");
 
 /// for (a, b) in world
 ///     .descendants_depth_first::<Tree>(root)
 ///     .zip(["child 1", "child 2"])
 /// {
-///     assert_eq!(*world.get::<&str>(a).unwrap(), b)
+///     assert_eq!(*world.get::<&&str>(a).unwrap(), b)
 /// }
 ///
 /// ```

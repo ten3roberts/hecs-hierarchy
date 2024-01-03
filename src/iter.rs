@@ -46,7 +46,8 @@ where
         self.remaining -= 1;
 
         let current = self.current?;
-        let data = self.query.view().get(current)?;
+        let view = self.query.view();
+        let data = view.get(current)?;
 
         self.current = Some(data.next);
         Some(current)

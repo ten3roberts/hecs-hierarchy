@@ -75,7 +75,7 @@ where
     ) -> BreadthFirstIterator<Self, T>;
 
     /// Returns an iterator over all root objects in the world
-    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<Child<T>, &Parent<T>>>>;
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<&Parent<T>, &Child<T>>>>;
 }
 
 impl HierarchyMut for World {
@@ -252,8 +252,8 @@ impl<W: GenericWorld> Hierarchy for W {
         DepthFirstVisitor::new(self, root, accept)
     }
 
-    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<Child<T>, &Parent<T>>>> {
-        Ok(self.try_query::<&Parent<T>>()?.without::<Child<T>>())
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<&Parent<T>, &Child<T>>>> {
+        Ok(self.try_query::<&Parent<T>>()?.without::<&Child<T>>())
     }
 }
 
