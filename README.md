@@ -6,7 +6,7 @@
 [![Documentation](https://docs.rs/hecs-hierarchy/badge.svg)](https://docs.rs/hecs-hierarchy)
 [![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 
-Hierarchy implementation for hecs ECS.
+Hierarchy implementation for use with the *hecs* ECS.
 
 ### Features
 - [X] Iterate children of parent
@@ -19,18 +19,6 @@ Hierarchy implementation for hecs ECS.
 - [ ] Reverse iteration
 - [ ] Sorting
 - [ ] (Optional) associated data to relation
-
-### Getting Started
-
-Include both `hecs` and `hecs-hierarchy` as dependencies in your `Cargo.toml`.
-
-`hecs-hierarchy` does not re-export `hecs`
-
-```toml
-[dependencies]
-hecs = 0.5
-hecs-hierarchy = 0.1
-```
 
 ### Motivation
 
