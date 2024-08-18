@@ -163,7 +163,9 @@ fn despawn() {
     world.despawn_all::<Tree>(child3);
 
     assert_eq!(
-        world.descendants_depth_first::<Tree>(root).collect::<Vec<_>>(),
+        world
+            .descendants_depth_first::<Tree>(root)
+            .collect::<Vec<_>>(),
         vec![child1, child2, child4, child5]
     );
 }
