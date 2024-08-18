@@ -145,6 +145,30 @@ fn reattach() {
 }
 
 #[test]
+fn despawn() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    //           ------- Child 3
+    //      ---- Child 4
+    //      ---- Child 5
+
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+    let child3 = world.attach_new::<Tree, _>(child2, ("Child3",)).unwrap();
+    let child4 = world.attach_new::<Tree, _>(root, ("Child4",)).unwrap();
+    let child5 = world.attach_new::<Tree, _>(root, ("Child5",)).unwrap();
+
+    world.despawn_all::<Tree>(child3);
+
+    assert_eq!(
+        world.descendants_depth_first::<Tree>(root).collect::<Vec<_>>(),
+        vec![child1, child2, child4, child5]
+    );
+}
+
+#[test]
 fn dfs() {
     // Root ---- Child 1
     //      ---- Child 2
