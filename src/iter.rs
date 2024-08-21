@@ -204,10 +204,12 @@ impl<'a, F: Fn(&W, Entity) -> bool + Component, W: GenericWorld, T: Component> I
 
                 // If current is a parent, push a new stack frame with the first child
                 if let Some(parent) = self.parents.view().get(current) {
-                    self.stack.push(StackFrame {
-                        current: parent.view_first_child(&children).unwrap(),
-                        remaining: parent.num_children,
-                    })
+                    if let Ok(first_child) = parent.view_first_child(&children) {
+                        self.stack.push(StackFrame {
+                            current: first_child,
+                            remaining: parent.num_children,
+                        })
+                    }
                 }
 
                 return Some(current);
@@ -239,10 +241,12 @@ impl<'a, T: Component> Iterator for DepthFirstIterator<'a, T> {
 
             // If current is a parent, push a new stack frame with the first child
             if let Some(parent) = self.parents.view().get(current) {
-                self.stack.push(StackFrame {
-                    current: parent.view_first_child(&children).unwrap(),
-                    remaining: parent.num_children,
-                })
+                if let Ok(first_child) = parent.view_first_child(&children) {
+                    self.stack.push(StackFrame {
+                        current: first_child,
+                        remaining: parent.num_children,
+                    })
+                }
             }
 
             Some(current)
