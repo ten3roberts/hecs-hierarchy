@@ -86,20 +86,25 @@ impl HierarchyMut for World {
             let prev = p.last_child;
             p.last_child = child;
 
-            let mut prev_data = self.try_get_mut::<Child<T>>(prev)?;
-            let next = prev_data.next;
-            prev_data.next = child;
+            if p.num_children == 1 {
+                mem::drop(maybe_p);
+                self.try_insert(child, (Child::<T>::new(parent, child, child),))?;
+            } else {
+                let mut prev_data = self.try_get_mut::<Child<T>>(prev)?;
+                let next = prev_data.next;
+                prev_data.next = child;
 
-            mem::drop(prev_data);
-            mem::drop(maybe_p);
+                mem::drop(prev_data);
+                mem::drop(maybe_p);
 
-            // Update backward linking
-            {
-                let mut next_data = self.try_get_mut::<Child<T>>(next)?;
-                next_data.prev = child;
+                // Update backward linking
+                {
+                    let mut next_data = self.try_get_mut::<Child<T>>(next)?;
+                    next_data.prev = child;
+                }
+
+                self.try_insert(child, (Child::<T>::new(parent, next, prev),))?;
             }
-
-            self.try_insert(child, (Child::<T>::new(parent, next, prev),))?;
 
             return Ok(child);
         }
