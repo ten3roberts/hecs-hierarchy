@@ -47,6 +47,33 @@ fn basic() {
 }
 
 #[test]
+fn reattach2() {
+    // Root ---- Child 1
+    //      ---- Child 2
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+    let child1 = world.spawn(("Child1",));
+    let child2 = world.spawn(("Child2",));
+    world.attach::<Tree>(child1, root).unwrap();
+    world.attach::<Tree>(child2, root).unwrap();
+
+    world.detach::<Tree>(child2).unwrap();
+    world.attach::<Tree>(child2, child1).unwrap();
+    world.detach::<Tree>(child2).unwrap();
+    world.attach::<Tree>(child2, root).unwrap();
+
+    for e in world.descendants_depth_first::<Tree>(root) {
+        println!("{:?}", *world.get::<&&str>(e).unwrap());
+    }
+
+    world.detach::<Tree>(child2).unwrap();
+    world.attach::<Tree>(child2, child1).unwrap();
+    for e in world.descendants_depth_first::<Tree>(root) {
+        println!("{:?}", *world.get::<&&str>(e).unwrap());
+    }
+}
+
+#[test]
 fn ancestors() {
     let mut world = World::default();
     let depth = 10;
