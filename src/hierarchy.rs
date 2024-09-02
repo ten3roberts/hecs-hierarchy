@@ -143,7 +143,7 @@ impl HierarchyMut for World {
             Ok(())
         })?;
 
-        self.remove_one::<Parent<T>>(parent).unwrap();
+        self.try_remove_one::<Parent<T>>(parent)?;
 
         Ok(children)
     }
@@ -156,7 +156,7 @@ impl HierarchyMut for World {
             .iter()
             .for_each(|child| self.despawn_all::<Child<T>>(*child));
 
-        self.remove_one::<Parent<T>>(parent).unwrap();
+        self.try_remove_one::<Parent<T>>(parent)?;
 
         Ok(())
     }
@@ -172,10 +172,16 @@ impl HierarchyMut for World {
         self.try_get_mut::<Child<T>>(prev)?.next = next;
         self.try_get_mut::<Child<T>>(next)?.prev = prev;
 
-        let mut parent = self.try_get_mut::<Parent<T>>(parent)?;
-        parent.num_children -= 1;
-        if parent.last_child == child {
-            parent.last_child = prev;
+        let mut remove_parent = false;
+        {
+            let mut parent_comp = self.try_get_mut::<Parent<T>>(parent)?;
+            parent_comp.num_children -= 1;
+            if parent_comp.num_children == 0 {
+                remove_parent = true;
+            }
+        }
+        if remove_parent {
+            self.try_remove_one::<Parent<T>>(parent)?;
         }
 
         Ok(())

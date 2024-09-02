@@ -198,6 +198,27 @@ fn despawn() {
 }
 
 #[test]
+fn despawn_last_child() {
+    let mut world = World::default();
+    let root = world.spawn(("Root",));
+
+    let child1 = world.attach_new::<Tree, _>(root, ("Child1",)).unwrap();
+
+    world.despawn_all::<Tree>(child1);
+
+    let child2 = world.attach_new::<Tree, _>(root, ("Child2",)).unwrap();
+
+    assert_eq!(world.children::<Tree>(root).count(), 1);
+
+    assert_eq!(
+        world
+            .descendants_depth_first::<Tree>(root)
+            .collect::<Vec<_>>(),
+        vec![child2]
+    );
+}
+
+#[test]
 fn dfs() {
     // Root ---- Child 1
     //      ---- Child 2
