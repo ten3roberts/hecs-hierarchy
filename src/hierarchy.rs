@@ -53,29 +53,29 @@ where
 
     /// Traverses the immediate children of parent. If parent is not a Parent, an empty iterator is
     /// returned.
-    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<T>;
+    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<'_, T>;
 
     /// Traverse the tree upwards. Iterator does not include the child itself.
-    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<T>;
+    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<'_, T>;
 
     /// Traverse the tree depth first. Iterator does not include the child itself.
-    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<T>;
+    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<'_, T>;
 
     /// Traverse the tree depth first with an acceptance function
     fn visit<T: Component, F: Fn(&Self, Entity) -> bool + Component>(
         &self,
         root: Entity,
         accept: F,
-    ) -> DepthFirstVisitor<Self, T, F>;
+    ) -> DepthFirstVisitor<'_, Self, T, F>;
 
     /// Traverse the tree breadth first. Iterator does not include the child itself.
     fn descendants_breadth_first<T: Component>(
         &self,
         root: Entity,
-    ) -> BreadthFirstIterator<Self, T>;
+    ) -> BreadthFirstIterator<'_, Self, T>;
 
     /// Returns an iterator over all root objects in the world
-    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<(Entity, &Parent<T>), &Child<T>>>>;
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<'_, Without<(Entity, &Parent<T>), &Child<T>>>>;
 }
 
 impl HierarchyMut for World {
@@ -216,7 +216,7 @@ impl<W: GenericWorld> Hierarchy for W {
         Ok(cur)
     }
 
-    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<T> {
+    fn children<T: Component>(&self, parent: Entity) -> ChildrenIter<'_, T> {
         self.try_get::<Parent<T>>(parent)
             .and_then(|parent| {
                 let first_child = parent.first_child(self)?;
@@ -233,11 +233,11 @@ impl<W: GenericWorld> Hierarchy for W {
             })
     }
 
-    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<T> {
+    fn ancestors<T: Component>(&self, child: Entity) -> AncestorIter<'_, T> {
         AncestorIter::new(self, child)
     }
 
-    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<T> {
+    fn descendants_depth_first<T: Component>(&self, root: Entity) -> DepthFirstIterator<'_, T> {
         DepthFirstIterator::new(self, root)
     }
 
@@ -245,7 +245,7 @@ impl<W: GenericWorld> Hierarchy for W {
     fn descendants_breadth_first<T: Component>(
         &self,
         root: Entity,
-    ) -> BreadthFirstIterator<Self, T> {
+    ) -> BreadthFirstIterator<'_, Self, T> {
         BreadthFirstIterator::new(self, root)
     }
 
@@ -253,11 +253,11 @@ impl<W: GenericWorld> Hierarchy for W {
         &self,
         root: Entity,
         accept: F,
-    ) -> DepthFirstVisitor<Self, T, F> {
+    ) -> DepthFirstVisitor<'_, Self, T, F> {
         DepthFirstVisitor::new(self, root, accept)
     }
 
-    fn roots<T: Component>(&self) -> Result<QueryBorrow<Without<(Entity, &Parent<T>), &Child<T>>>> {
+    fn roots<T: Component>(&self) -> Result<QueryBorrow<'_, Without<(Entity, &Parent<T>), &Child<T>>>> {
         let query = self.try_query::<(hecs::Entity, &Parent<T>)>()?;
         let query = query.without::<&Child<T>>();
         Ok(query)
