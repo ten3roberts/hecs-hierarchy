@@ -4,7 +4,7 @@
 //! [![Documentation](https://docs.rs/hecs-hierarchy/badge.svg)](https://docs.rs/hecs-hierarchy)
 //! [![LICENSE](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
 //!
-//! Hierarchy implementation for hecs ECS.
+//! Hierarchy implementation for use with the *hecs* ECS.
 //!
 //! ## Features
 //! - [X] Iterate children of parent
@@ -43,16 +43,14 @@
 //!
 //! ## Usage
 //!
-//! Import the [Hierarchy](crate::Hierarchy) trait which extends [hecs::World](hecs::World)
-//!
-//! The trait [Hierarchy](crate::Hierarchy) extends [hecs::World](hecs::World) with functions for
-//! manipulating and iterating the hierarchy tree.
+//! Import the [`Hierarchy`](crate::Hierarchy) trait which extends [`hecs::World`](hecs::World)
+//! with functions for manipulating and iterating the hierarchy tree.
 //!
 //! The hierarchy uses a marker type which makes it possible for a single entity to belong to
 //! several hierarchy trees.
 //!
 //! See the [documentation](https://docs.rs/hecs-hierarchy), more specifically the
-//! [Hierarchy](https://docs.rs/hecs-hierarchy/0.1.7/hecs_hierarchy/trait.Hierarchy.html)
+//! [`Hierarchy`](https://docs.rs/hecs-hierarchy/latest/hecs_hierarchy/trait.Hierarchy.html)
 //! trait
 //!
 //! Example usage:

@@ -8,10 +8,12 @@ use crate::{
     Parent,
 };
 
-/// A trait for modifying the worlds hierarchy. Implemented for `hecs::World`>
+/// A trait for modifying the worlds hierarchy. Implemented for [`hecs::World`].
 pub trait HierarchyMut {
-    /// Attach `child` to `parent`. Parent does not require an existing `Parent component`. Returns
-    /// the passed child.
+    /// Attach `child` to `parent`. Parent does not require an existing `Parent` component.
+    ///
+    /// Returns the passed child.
+    ///
     /// *Note*: The entity needs to be explicitly detached before being removed.
     fn attach<T: Component>(&mut self, child: Entity, parent: Entity) -> Result<Entity>;
 
@@ -23,8 +25,9 @@ pub trait HierarchyMut {
         components: C,
     ) -> Result<Entity>;
 
-    /// Detaches all children from entity and detaches entity from parent. Use this before removing
-    /// entities to ensure no loose entity ids.
+    /// Detaches all children from entity and detaches entity from parent.
+    ///
+    /// Use this before removing entities to ensure no loose entity ids.
     fn detach_all<T: Component>(&mut self, entity: Entity) -> Result<()>;
 
     /// Detaches all children of parent.
@@ -41,7 +44,7 @@ pub trait HierarchyMut {
     fn despawn_all<T: Component>(&mut self, parent: Entity);
 }
 
-/// Non mutating part of hierarchy
+/// Non-mutating part of hierarchy
 pub trait Hierarchy
 where
     Self: Sized,
@@ -281,5 +284,5 @@ impl WorldExt for World {
     }
 }
 
-/// A query for defininig a compatible subworld for [Hierarchy]
+/// A query for defininig a compatible [`Subworld`](hecs_schedule::SubWorld) for [`Hierarchy`]
 pub type HierarchyQuery<'a, T> = (&'a Parent<T>, &'a Child<T>);
