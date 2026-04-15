@@ -9,6 +9,7 @@ use crate::{Child, Hierarchy, Parent};
 const STACK_SIZE: usize = 64;
 
 /// Iterates children along with Query `Q`. Children who do not satisfy `Q` will be skipped.
+///
 /// Count is known in advanced and will not fold iterator.
 pub struct ChildrenIter<'a, T: Component> {
     query: QueryBorrow<'a, &'a Child<T>>,

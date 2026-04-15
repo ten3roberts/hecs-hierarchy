@@ -4,7 +4,8 @@ use hecs::{Entity, View};
 use hecs_schedule::{error::Result, GenericWorld};
 
 /// Component of a entity with descendents in hierarchy tree `T`.
-/// Children represent a circular linked list. Since `Parent` and child is generic over a marker
+///
+/// Children represent a circular linked list. Since `Parent` and `Child` are generic over a marker
 /// type, several hierarchies can coexist.
 pub struct Parent<T> {
     pub(crate) num_children: usize,
@@ -53,8 +54,9 @@ impl<T> std::fmt::Debug for Parent<T> {
     }
 }
 
-/// Component of a child entity in hierarchy tree `T`.
-/// Children represent a circular linked list. Since `Parent` and child is generic over a marker
+/// Component of a `Child` entity in hierarchy tree `T`.
+///
+/// Children represent a circular linked list. Since `Parent` and `Child` are generic over a marker
 /// type, several hierarchies can coexist.
 pub struct Child<T> {
     pub(crate) parent: Entity,

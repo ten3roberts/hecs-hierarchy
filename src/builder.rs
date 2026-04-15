@@ -6,9 +6,9 @@ use once_cell::sync::OnceCell;
 
 use crate::{HierarchyMut, TreeBuilderClone};
 
-/// Ergonomically construct trees without knowledge of world.
+/// Ergonomically construct trees without knowledge of [`World`](hecs::World).
 ///
-/// This struct builds the world using [EntityBuilder](hecs::EntityBuilder)
+/// This struct builds the world using [`EntityBuilder`](hecs::EntityBuilder)
 ///
 /// # Example
 /// ```rust
@@ -60,7 +60,7 @@ impl<T: Component> TreeBuilder<T> {
         *self.reserved.get_or_init(|| world.reserve())
     }
 
-    /// Spawn the whole tree into the world
+    /// Spawn the whole tree into the [`World`](hecs::World)
     pub fn spawn(&mut self, world: &mut World) -> Entity {
         let parent = self.reserve(world);
         let builder = self.builder.build();
@@ -74,8 +74,8 @@ impl<T: Component> TreeBuilder<T> {
         parent
     }
 
-    /// Spawn the whole tree into a commandbuffer.
-    /// The world is required for reserving entities.
+    /// Spawn the whole tree into a [`CommandBuffer`].
+    /// The [`World`](hecs::World) is required for reserving entities.
     pub fn spawn_deferred(&mut self, world: &impl GenericWorld, cmd: &mut CommandBuffer) -> Entity {
         let parent = self.reserve(world);
         let builder = self.builder.build();
@@ -123,7 +123,7 @@ impl<T: Component> TreeBuilder<T> {
         self
     }
 
-    /// Consuming variant of [Self::attach].
+    /// Consuming variant of [`Self::attach()`].
     ///
     /// This is useful for nesting to alleviate the need to save an intermediate
     /// builder
@@ -132,7 +132,8 @@ impl<T: Component> TreeBuilder<T> {
         self
     }
 
-    /// Consuming variant of [Self::attach_tree].
+    /// Consuming variant of [`Self::attach_tree()`].
+    ///
     /// This is useful for nesting to alleviate the need to save an intermediate
     /// builder
     pub fn attach_tree_move(mut self, child: impl Into<Self>) -> Self {
